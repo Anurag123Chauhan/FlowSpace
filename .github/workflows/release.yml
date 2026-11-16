@@ -233,16 +233,16 @@ jobs:
               throw 'No release archives were downloaded'
           }
 
-          gh release view $tag 2>$null
+          gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -ne 0) {
-              gh release create $tag --generate-notes
+              gh release create $tag --repo $env:GITHUB_REPOSITORY --generate-notes
               if ($LASTEXITCODE -ne 0) {
                   throw "Could not create release $tag"
               }
           }
 
           foreach ($archive in $archives) {
-              gh release upload $tag $archive.FullName --clobber
+              gh release upload $tag $archive.FullName --repo $env:GITHUB_REPOSITORY --clobber
               if ($LASTEXITCODE -ne 0) {
                   throw "Could not upload $($archive.Name)"
               }
