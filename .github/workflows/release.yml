@@ -38,8 +38,11 @@ jobs:
           $header = 'external\spdlog\include\spdlog\spdlog.h'
           if (-not (Test-Path $header)) {
               $cloneDir = Join-Path $env:RUNNER_TEMP 'spdlog'
-              git clone --depth 1 https://github.com/gabime/spdlog.git $cloneDir
-              git -C $cloneDir checkout 79524ddd08a4ec981b7fea76afd08ee05f83755d
+              git clone --depth 1 --branch v1.17.0 https://github.com/gabime/spdlog.git $cloneDir
+              $spdlogCommit = (git -C $cloneDir rev-parse HEAD).Trim()
+              if ($spdlogCommit -ne '79524ddd08a4ec981b7fea76afd08ee05f83755d') {
+                  throw "Unexpected spdlog commit: $spdlogCommit"
+              }
               New-Item -ItemType Directory -Force 'external\spdlog' | Out-Null
               Copy-Item (Join-Path $cloneDir '*') 'external\spdlog' -Recurse -Force
           }
