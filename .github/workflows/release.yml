@@ -161,10 +161,13 @@ jobs:
               'ADVAPI32.dll', 'COMCTL32.dll', 'COMDLG32.dll', 'DWMAPI.dll',
               'GDI32.dll', 'KERNEL32.dll', 'OLE32.dll', 'OLEAUT32.dll',
               'SHELL32.dll', 'SHCORE.dll', 'USER32.dll', 'UXTHEME.dll',
-              'UUID.dll', 'WINMM.dll', 'WS2_32.dll'
+              'UUID.dll', 'UCRTBASE.dll', 'WINMM.dll', 'WS2_32.dll'
           )
           foreach ($dll in $imports) {
-              if ($systemDlls -contains $dll.ToUpperInvariant()) {
+              $dllUpper = $dll.ToUpperInvariant()
+              if ($systemDlls -contains $dllUpper -or
+                  $dllUpper.StartsWith('API-MS-WIN-') -or
+                  $dllUpper.StartsWith('EXT-MS-WIN-')) {
                   continue
               }
 
