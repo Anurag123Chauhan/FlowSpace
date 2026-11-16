@@ -477,10 +477,10 @@ namespace
             {HotkeyAction::RevealAllWindows, true, L"Ctrl+Alt", L"Left"},
         };
         // Use a real (hidden) message window so RegisterHotKey has an owner.
-        const char *cls = "FlowSpaceTestHotkeyWindow";
+        constexpr wchar_t cls[] = L"FlowSpaceTestHotkeyWindow";
         WNDCLASSW wc{};
         wc.lpfnWndProc = DefWindowProcW;
-        wc.lpszClassName = reinterpret_cast<LPCWSTR>(cls);
+        wc.lpszClassName = cls;
         wc.hInstance = GetModuleHandleW(nullptr);
         RegisterClassW(&wc);
         HWND msgWindow = CreateWindowExW(0, wc.lpszClassName, L"", 0, 0, 0, 0, 0, nullptr, nullptr, wc.hInstance, nullptr);
@@ -492,9 +492,9 @@ namespace
 
         // Valid, non-conflicting set: numeric expansion registers many ids.
         std::vector<flowspace::core::HotkeyBinding> valid = {
-            {HotkeyAction::PreviousWorkspace, true, L"Ctrl+Alt", L"Left"},
-            {HotkeyAction::NextWorkspace, true, L"Ctrl+Alt", L"Right"},
-            {HotkeyAction::SwitchToWorkspaceByNumber, true, L"Ctrl+Alt", L"D1"},
+            {HotkeyAction::PreviousWorkspace, true, L"Ctrl+Alt+Shift+Win", L"F11"},
+            {HotkeyAction::NextWorkspace, true, L"Ctrl+Alt+Shift+Win", L"F12"},
+            {HotkeyAction::SwitchToWorkspaceByNumber, true, L"Ctrl+Alt+Shift+Win", L"D9"},
         };
         const auto conflicts2 = hotkeys.RegisterAll(msgWindow, valid);
         CHECK(conflicts2.empty());
