@@ -30,6 +30,20 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Restore spdlog dependency
+        shell: pwsh
+        run: |
+          $header = 'external\spdlog\include\spdlog\spdlog.h'
+          if (-not (Test-Path $header)) {
+              $cloneDir = Join-Path $env:RUNNER_TEMP 'spdlog'
+              git clone --depth 1 --branch v1.17.0 https://github.com/gabime/spdlog.git $cloneDir
+              New-Item -ItemType Directory -Force 'external\spdlog' | Out-Null
+              Copy-Item (Join-Path $cloneDir '*') 'external\spdlog' -Recurse -Force
+          }
+          if (-not (Test-Path $header)) {
+              throw 'spdlog headers are missing after dependency restore'
+          }
+
       - name: Install MinGW toolchain
         id: msys2
         uses: msys2/setup-msys2@v2
