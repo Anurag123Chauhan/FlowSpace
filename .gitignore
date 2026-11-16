@@ -1,0 +1,36 @@
+# CMake and build output
+build/
+obj/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+Makefile
+build.ninja
+.ninja_deps
+.ninja_log
+
+# Compiled binaries and object files
+*.exe
+*.dll
+*.o
+*.obj
+*.a
+*.lib
+*.exp
+*.pdb
+
+# Runtime logs and local application data
+logs/
+*.log
+
+# IDE and OS files
+.vs/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+.DS_Store
+Thumbs.db
