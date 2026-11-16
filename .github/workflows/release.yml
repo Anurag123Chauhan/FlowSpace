@@ -79,16 +79,17 @@ jobs:
       - name: Configure Release build
         shell: pwsh
         run: |
+          $cmakeMingwBin = $env:MINGW_BIN.Replace('\', '/')
           $cmakeArgs = @(
               '-S', '.',
               '-B', 'build\cmake',
               '-G', 'Ninja',
               '-DCMAKE_BUILD_TYPE=Release',
-              "-DCMAKE_CXX_COMPILER=$(Join-Path $env:MINGW_BIN 'g++.exe')",
-              "-DCMAKE_C_COMPILER=$(Join-Path $env:MINGW_BIN 'gcc.exe')",
-              "-DCMAKE_RC_COMPILER=$(Join-Path $env:MINGW_BIN 'windres.exe')",
-              "-DCMAKE_MAKE_PROGRAM=$(Join-Path $env:MINGW_BIN 'ninja.exe')",
-              "-DCMAKE_CXX_COMPILER_LAUNCHER=$(Join-Path $env:MINGW_BIN 'ccache.exe')"
+              "-DCMAKE_CXX_COMPILER=$cmakeMingwBin/g++.exe",
+              "-DCMAKE_C_COMPILER=$cmakeMingwBin/gcc.exe",
+              "-DCMAKE_RC_COMPILER=$cmakeMingwBin/windres.exe",
+              "-DCMAKE_MAKE_PROGRAM=$cmakeMingwBin/ninja.exe",
+              "-DCMAKE_CXX_COMPILER_LAUNCHER=$cmakeMingwBin/ccache.exe"
           )
           cmake @cmakeArgs
           if ($LASTEXITCODE -ne 0) {
