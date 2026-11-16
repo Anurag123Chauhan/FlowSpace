@@ -24,7 +24,7 @@ shows another set — like virtual desktops, but per monitor, with full crash re
 ## Requirements
 
 - Windows 10 (1903+) or Windows 11.
-- The release workflow produces packages for both x86 and x64 Windows.
+- The release workflow produces packages for x64 Windows.
 - Building from source requires a MinGW-w64 toolchain, CMake, and Ninja. The helper script
   defaults to a 32-bit toolchain at `C:\mingw32\bin`; those paths can be overridden at
   configure time.
@@ -33,9 +33,9 @@ shows another set — like virtual desktops, but per monitor, with full crash re
 
 ## Download and use
 
-For normal use, download the latest `FlowSpace-<version>-windows-x86.zip` or
-`FlowSpace-<version>-windows-x64.zip` from the repository's Releases page, extract it, and
-run `flowspace.exe`. No compiler, CMake, Ninja, or source checkout is required.
+For normal use, download the latest `FlowSpace-<version>-windows-x64.zip` from the
+repository's Releases page, extract it, and run `flowspace.exe`. No compiler, CMake, Ninja,
+or source checkout is required.
 
 The release package contains the application, required runtime dependencies, the project
 license, and third-party license information. FlowSpace starts in the system tray; configuration
@@ -67,8 +67,8 @@ Outputs into `build/cmake/`:
 | `flowspace_tests.exe` | Core-logic test suite (137 checks) |
 
 A static `libstdc++`/`libgcc` link (`-static`) means the exe runs without MinGW runtime DLLs.
-The automated release workflow builds and tests both x86 and x64 packages. It also checks
-the executable's imports and includes any required MinGW runtime DLLs in the package.
+The automated release workflow builds and tests an x64 package. It also checks the
+executable's imports and includes any required MinGW runtime DLLs in the package.
 
 ### Icon
 
@@ -123,12 +123,12 @@ tests/test_core.cpp          self-contained test harness (no external framework)
 packaging/                   app.rc (icon + version), app.manifest (reference)
 docs/                        ARCHITECTURE.md, CONFIGURATION.md, TESTING.md
 scripts/                     build.ps1, compile-check.ps1, make-icon.ps1, stop.ps1
-.github/workflows/release.yml automated x86/x64 Windows release builds
+.github/workflows/release.yml automated x64 Windows release build
 ```
 
 ## Known limitations
 
-- The local `scripts\build.ps1` helper is configured for the pinned 32-bit (i686) toolchain;
-  automated releases also build x64.
+- The local `scripts\build.ps1` helper uses the pinned developer toolchain; automated
+  releases use the x64 UCRT64 toolchain.
 - Single-threaded design: everything runs on the main message-loop thread (deliberate).
 - Hotkey conflict UI surfaces conflicts in Settings; registration is all-or-nothing per combo.

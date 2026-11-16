@@ -18,26 +18,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: x86
-            msystem: MINGW32
-            prefix: mingw32
-            gcc: mingw-w64-i686-gcc
-            binutils: mingw-w64-i686-binutils
-            ninja: mingw-w64-i686-ninja
-            ccache: mingw-w64-i686-ccache
           - arch: x64
-            msystem: MINGW64
-            prefix: mingw64
-            gcc: mingw-w64-x86_64-gcc
-            binutils: mingw-w64-x86_64-binutils
-            ninja: mingw-w64-x86_64-ninja
-            ccache: mingw-w64-x86_64-ccache
+            msystem: UCRT64
+            prefix: ucrt64
+            gcc: mingw-w64-ucrt-x86_64-gcc
+            binutils: mingw-w64-ucrt-x86_64-binutils
+            ninja: mingw-w64-ucrt-x86_64-ninja
+            ccache: mingw-w64-ucrt-x86_64-ccache
 
     steps:
       - name: Check out source
         uses: actions/checkout@v4
 
       - name: Install MinGW toolchain
+        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
@@ -52,7 +46,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            C:\msys64\var\cache\pacman\pkg
+            ${{ steps.msys2.outputs.msys2-location }}\var\cache\pacman\pkg
             .ccache
           key: ${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('.github/workflows/release.yml') }}
           restore-keys: |
@@ -61,7 +55,8 @@ jobs:
       - name: Configure toolchain environment
         shell: pwsh
         run: |
-          $mingwBin = "C:\msys64\${{ matrix.prefix }}\bin"
+          $msys2Location = "${{ steps.msys2.outputs.msys2-location }}"
+          $mingwBin = Join-Path $msys2Location "${{ matrix.prefix }}\bin"
           Add-Content $env:GITHUB_PATH $mingwBin
           "MINGW_BIN=$mingwBin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "CCACHE_DIR=$env:GITHUB_WORKSPACE\.ccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
