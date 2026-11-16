@@ -3,7 +3,7 @@
         {
             "name": "MinGW",
             "compilerPath": "C:\\mingw32\\bin\\g++.exe",
-            "intelliSenseMode": "windows-gcc-x64",
+            "intelliSenseMode": "windows-gcc-x86",
             "cppStandard": "c++23",
             "defines": [
                 "_WIN32_WINNT=0x0A00",
@@ -12,7 +12,7 @@
             "includePath": [
                 "${workspaceFolder}\\src",
                 "${workspaceFolder}\\external\\spdlog\\include",
-                "${workspaceFolder}"
+                "${workspaceFolder}\\external"
             ]
         }
     ],
