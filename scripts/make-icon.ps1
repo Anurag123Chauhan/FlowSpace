@@ -27,7 +27,7 @@ function Draw-RoundedSquare($graphics, $x, $y, $w, $h, $r, $color) {
 }
 
 $accent = [System.Drawing.Color]::FromArgb(255, 67, 137, 216)  # #4389D8
-$white  = [System.Drawing.Color]::FromArgb(255, 240, 242, 245)
+$white = [System.Drawing.Color]::FromArgb(255, 240, 242, 245)
 
 # Back square (accent), front square (white) offset up-right.
 $inset = 34

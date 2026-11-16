@@ -1,7 +1,7 @@
 # Compiles all FlowSpace sources to object files and links the diagnostic binary.
 # Used as a fast compile checkpoint during development.
 $ErrorActionPreference = 'Continue'
-$g = 'C:\mingw32\bin\g++.exe'
+$g = 'C:\msys64\ucrt64\bin\g++.exe'
 $flags = @('-std=c++23', '-g', '-O0', '-static', '-Wall', '-Wextra', '-Isrc', '-Iexternal/spdlog/include', '-Iexternal')
 New-Item -ItemType Directory -Force build\obj | Out-Null
 $files = @(

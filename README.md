@@ -25,21 +25,30 @@ shows another set — like virtual desktops, but per monitor, with full crash re
 
 - Windows 10 (1903+) or Windows 11.
 - The release workflow produces packages for x64 Windows.
-- Building from source requires a MinGW-w64 toolchain, CMake, and Ninja. The helper script
-  defaults to a 32-bit toolchain at `C:\mingw32\bin`; those paths can be overridden at
-  configure time.
+- Building from source requires a MinGW-w64 UCRT64 toolchain, CMake, and Ninja. The helper
+  script defaults to `C:\msys64\ucrt64\bin`; that path can be overridden with `-MingwBin`.
 - No admin rights required. Dependencies are vendored: spdlog (`external/spdlog`) and
   nlohmann/json (`external/nlohmann`).
 
 ## Download and use
 
-For normal use, download the latest `FlowSpace-<version>-windows-x64.zip` from the
-repository's Releases page, extract it, and run `flowspace.exe`. No compiler, CMake, Ninja,
-or source checkout is required.
+For normal use, download the latest `FlowSpace-<version>-windows-x64-setup.exe` from the
+[Releases page](https://github.com/Anurag123Chauhan/FlowSpace/releases) and run it, or
+download the matching `FlowSpace-<version>-windows-x64.zip`, extract it to a folder of your
+choice, and run `flowspace.exe`. No compiler, CMake, Ninja, or source checkout is required.
 
 The release package contains the application, required runtime dependencies, the project
-license, and third-party license information. FlowSpace starts in the system tray; configuration
-and logs are stored under `%LOCALAPPDATA%\FlowSpace\`.
+license, and third-party license information. The installer adds Start Menu and optional
+desktop shortcuts. FlowSpace starts in the system tray;
+configuration and logs are stored under `%LOCALAPPDATA%\FlowSpace\`.
+
+To uninstall the installer version, exit FlowSpace and use **Installed apps** in Windows
+Settings or **Uninstall FlowSpace** from the Start Menu. The portable ZIP can be removed by
+exiting FlowSpace and deleting the folder where you extracted it. To remove personal settings
+and logs as well, delete
+`%LOCALAPPDATA%\FlowSpace\`. If FlowSpace startup was enabled, disable it first in Settings
+or remove its Startup entry from Windows Settings. See [UNINSTALL.md](UNINSTALL.md) for
+details.
 
 ## Build
 
@@ -48,6 +57,8 @@ Source builds are intended for contributors and developers:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\build.ps1            # Debug
 powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -BuildType Release
+# Custom MSYS2 installation:
+powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -MingwBin C:\tools\ucrt64\bin
 ```
 
 Or with CMake directly (MinGW bin on PATH):
@@ -69,6 +80,9 @@ Outputs into `build/cmake/`:
 A static `libstdc++`/`libgcc` link (`-static`) means the exe runs without MinGW runtime DLLs.
 The automated release workflow builds and tests an x64 package. It also checks the
 executable's imports and includes any required MinGW runtime DLLs in the package.
+Tagged releases use the protected `release-signing` GitHub Environment for packaging.
+Configure that environment with required reviewers and tag-only deployment rules before
+running release builds.
 
 ### Icon
 
@@ -124,11 +138,13 @@ packaging/                   app.rc (icon + version), app.manifest (reference)
 docs/                        ARCHITECTURE.md, CONFIGURATION.md, TESTING.md
 scripts/                     build.ps1, compile-check.ps1, make-icon.ps1, stop.ps1
 .github/workflows/release.yml automated x64 Windows release build
+packaging/FlowSpace.iss      Inno Setup installer definition
+THIRD-PARTY-NOTICES.txt      bundled dependency license summary
+UNINSTALL.md                 uninstall instructions for installer and portable releases
 ```
 
 ## Known limitations
 
-- The local `scripts\build.ps1` helper uses the pinned developer toolchain; automated
-  releases use the x64 UCRT64 toolchain.
+- The project supports x64 Windows builds using the MSYS2 UCRT64 toolchain.
 - Single-threaded design: everything runs on the main message-loop thread (deliberate).
 - Hotkey conflict UI surfaces conflicts in Settings; registration is all-or-nothing per combo.

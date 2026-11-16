@@ -2,16 +2,19 @@
 # Usage: powershell -ExecutionPolicy Bypass -File scripts\build.ps1 [-BuildType Debug|Release]
 param(
     [string]$BuildType = 'Debug',
-    [switch]$NoTests
+    [switch]$NoTests,
+    [string]$MingwBin = 'C:\msys64\ucrt64\bin'
 )
 
 $ErrorActionPreference = 'Stop'
-$mingwBin = 'C:\mingw32\bin'
-if (-not (Test-Path "$mingwBin\g++.exe")) {
-    Write-Error "MinGW toolchain not found at $mingwBin"
+$requiredTools = @('g++.exe', 'gcc.exe', 'ninja.exe', 'windres.exe')
+foreach ($tool in $requiredTools) {
+    if (-not (Test-Path (Join-Path $MingwBin $tool))) {
+        Write-Error "Required tool '$tool' not found at $MingwBin"
+    }
 }
 
-$env:PATH = "$mingwBin;$env:PATH"
+$env:PATH = "$MingwBin;$env:PATH"
 
 $source = Split-Path $PSScriptRoot -Parent
 $buildDir = Join-Path $source 'build\cmake'
@@ -24,10 +27,12 @@ if (-not (Test-Path (Join-Path $source 'build\flowspace.ico'))) {
 Write-Output "=== Configuring ($BuildType) ==="
 # NOTE: pass args as an array. The backtick-continuation form interacted badly with the
 # console layer and once delivered a literal '$BuildType' into the CMake cache.
+$cmakeMingwBin = $MingwBin.Replace('\', '/')
 $cmakeArgs = @('-S', $source, '-B', $buildDir, '-G', 'Ninja', "-DCMAKE_BUILD_TYPE=$BuildType",
-    "-DCMAKE_CXX_COMPILER=$mingwBin\g++.exe",
-    "-DCMAKE_C_COMPILER=$mingwBin\gcc.exe",
-    "-DCMAKE_MAKE_PROGRAM=$mingwBin\ninja.exe")
+"-DCMAKE_CXX_COMPILER=$cmakeMingwBin/g++.exe",
+"-DCMAKE_C_COMPILER=$cmakeMingwBin/gcc.exe",
+"-DCMAKE_RC_COMPILER=$cmakeMingwBin/windres.exe",
+"-DCMAKE_MAKE_PROGRAM=$cmakeMingwBin/ninja.exe")
 cmake @cmakeArgs
 if ($LASTEXITCODE -ne 0) { Write-Error 'CMake configure failed' }
 

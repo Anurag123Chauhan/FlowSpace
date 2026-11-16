@@ -6,10 +6,10 @@ project(FlowSpace
     LANGUAGES CXX)
 
 # --- toolchain expectations ---------------------------------------------------
-# MinGW-w64 (i686) toolchain: g++, windres. Configure with, for example:
+# MinGW-w64 UCRT64 toolchain: g++, windres. Configure with, for example:
 #   cmake -S . -B build -G Ninja ^
-#     -DCMAKE_CXX_COMPILER=C:/mingw32/bin/g++.exe ^
-#     -DCMAKE_MAKE_PROGRAM=C:/mingw32/bin/ninja.exe
+#     -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe ^
+#     -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/ninja.exe
 # Dependencies are vendored: spdlog in external/spdlog, nlohmann/json in external/nlohmann.
 
 set(CMAKE_CXX_STANDARD 23)

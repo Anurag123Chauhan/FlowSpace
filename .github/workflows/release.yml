@@ -7,12 +7,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  checks: write
+  contents: read
 
 jobs:
   build:
     name: Build ${{ matrix.arch }}
+    permissions:
+      contents: read
+      checks: write
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -28,7 +30,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Restore spdlog dependency
         shell: pwsh
@@ -36,7 +38,8 @@ jobs:
           $header = 'external\spdlog\include\spdlog\spdlog.h'
           if (-not (Test-Path $header)) {
               $cloneDir = Join-Path $env:RUNNER_TEMP 'spdlog'
-              git clone --depth 1 --branch v1.17.0 https://github.com/gabime/spdlog.git $cloneDir
+              git clone --depth 1 https://github.com/gabime/spdlog.git $cloneDir
+              git -C $cloneDir checkout 79524ddd08a4ec981b7fea76afd08ee05f83755d
               New-Item -ItemType Directory -Force 'external\spdlog' | Out-Null
               Copy-Item (Join-Path $cloneDir '*') 'external\spdlog' -Recurse -Force
           }
@@ -46,7 +49,7 @@ jobs:
 
       - name: Install MinGW toolchain
         id: msys2
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e
         with:
           msystem: ${{ matrix.msystem }}
           update: true
@@ -57,10 +60,9 @@ jobs:
             ${{ matrix.ccache }}
 
       - name: Restore build caches
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
-            ${{ steps.msys2.outputs.msys2-location }}\var\cache\pacman\pkg
             .ccache
           key: ${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('.github/workflows/release.yml') }}
           restore-keys: |
@@ -119,8 +121,8 @@ jobs:
         run: ctest --test-dir build\cmake --build-config Release --output-on-failure --output-junit test-results.xml
 
       - name: Publish test report
-        if: always()
-        uses: dorny/test-reporter@v2
+        if: always() && hashFiles('build/cmake/test-results.xml') != ''
+        uses: dorny/test-reporter@df6247429542221bc30d46a036ee47af1102c451
         with:
           name: CTest (${{ matrix.arch }})
           path: build/cmake/test-results.xml
@@ -128,7 +130,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: test-results-${{ matrix.arch }}
           path: build\cmake\test-results.xml
@@ -137,12 +139,16 @@ jobs:
       - name: Package application and dependencies
         id: package
         shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: |
           if ($env:GITHUB_REF -match '^refs/tags/(.+)$') {
               $version = $Matches[1]
           } else {
               $version = $env:GITHUB_SHA.Substring(0, 7)
           }
+          $displayVersion = $version -replace '^v', ''
 
           $packageName = "FlowSpace-$version-windows-${{ matrix.arch }}"
           $packageDir = Join-Path $env:RUNNER_TEMP $packageName
@@ -150,38 +156,68 @@ jobs:
           New-Item -ItemType Directory -Force $licenseDir | Out-Null
 
           Copy-Item build\cmake\flowspace.exe $packageDir
-          Copy-Item README.md, LICENSE $packageDir
+          Copy-Item README.md, LICENSE, THIRD-PARTY-NOTICES.txt, UNINSTALL.md $packageDir
           Copy-Item external\spdlog\LICENSE (Join-Path $licenseDir 'spdlog-LICENSE')
 
-          $imports = & "$env:MINGW_BIN\objdump.exe" -p (Join-Path $packageDir 'flowspace.exe') |
-              Select-String 'DLL Name:' |
-              ForEach-Object { ($_ -split ':', 2)[1].Trim() } |
-              Sort-Object -Unique
           $systemDlls = @(
               'ADVAPI32.dll', 'COMCTL32.dll', 'COMDLG32.dll', 'DWMAPI.dll',
               'GDI32.dll', 'KERNEL32.dll', 'OLE32.dll', 'OLEAUT32.dll',
               'SHELL32.dll', 'SHCORE.dll', 'USER32.dll', 'UXTHEME.dll',
               'UUID.dll', 'UCRTBASE.dll', 'WINMM.dll', 'WS2_32.dll'
           )
-          foreach ($dll in $imports) {
-              $dllUpper = $dll.ToUpperInvariant()
-              if ($systemDlls -contains $dllUpper -or
-                  $dllUpper.StartsWith('API-MS-WIN-') -or
-                  $dllUpper.StartsWith('EXT-MS-WIN-')) {
+          $windowsDllDirs = @("$env:WINDIR\System32")
+          $pending = [System.Collections.Generic.Queue[string]]::new()
+          $scanned = @{}
+          $pending.Enqueue((Join-Path $packageDir 'flowspace.exe'))
+          while ($pending.Count -gt 0) {
+              $binary = $pending.Dequeue()
+              $binaryKey = $binary.ToUpperInvariant()
+              if ($scanned.ContainsKey($binaryKey)) {
                   continue
               }
+              $scanned[$binaryKey] = $true
 
-              $runtimeDll = Join-Path $env:MINGW_BIN $dll
-              if (-not (Test-Path $runtimeDll)) {
-                  throw "Required runtime dependency was not found: $dll"
+              $imports = & "$env:MINGW_BIN\objdump.exe" -p $binary |
+                  Select-String 'DLL Name:' |
+                  ForEach-Object { ($_ -split ':', 2)[1].Trim() } |
+                  Sort-Object -Unique
+              foreach ($dll in $imports) {
+                  $dllUpper = $dll.ToUpperInvariant()
+                  if ($systemDlls -contains $dllUpper -or
+                      $dllUpper.StartsWith('API-MS-WIN-') -or
+                      $dllUpper.StartsWith('EXT-MS-WIN-')) {
+                      continue
+                  }
+
+                  $packageDll = Join-Path $packageDir $dll
+                  if (Test-Path $packageDll) {
+                      $pending.Enqueue($packageDll)
+                      continue
+                  }
+
+                  $systemDll = $windowsDllDirs |
+                      ForEach-Object { Join-Path $_ $dll } |
+                      Where-Object { Test-Path $_ } |
+                      Select-Object -First 1
+                  if ($systemDll) {
+                      continue
+                  }
+
+                  $runtimeDll = Join-Path $env:MINGW_BIN $dll
+                  if (-not (Test-Path $runtimeDll)) {
+                      throw "Required runtime dependency was not found: $dll (imported by $binary)"
+                  }
+                  Copy-Item $runtimeDll $packageDir
+                  $pending.Enqueue($packageDll)
               }
-              Copy-Item $runtimeDll $packageDir
           }
 
           $requiredFiles = @(
               (Join-Path $packageDir 'flowspace.exe'),
               (Join-Path $packageDir 'README.md'),
               (Join-Path $packageDir 'LICENSE'),
+              (Join-Path $packageDir 'THIRD-PARTY-NOTICES.txt'),
+              (Join-Path $packageDir 'UNINSTALL.md'),
               (Join-Path $licenseDir 'spdlog-LICENSE')
           )
           foreach ($file in $requiredFiles) {
@@ -190,33 +226,117 @@ jobs:
               }
           }
 
+          $certificatePath = $null
+          $signTool = $null
+          if ($env:WINDOWS_CERTIFICATE_BASE64) {
+              if (-not $env:WINDOWS_CERTIFICATE_PASSWORD) {
+                  throw 'WINDOWS_CERTIFICATE_PASSWORD is required when signing is enabled'
+              }
+              $certificatePath = Join-Path $env:RUNNER_TEMP 'flowspace-signing.pfx'
+              [IO.File]::WriteAllBytes(
+                  $certificatePath,
+                  [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+              $signTool = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' |
+                  Sort-Object FullName | Select-Object -Last 1
+              if (-not $signTool) {
+                  throw 'Windows SDK signtool.exe was not found'
+              }
+              & $signTool.FullName sign /fd SHA256 /f $certificatePath `
+                  /p $env:WINDOWS_CERTIFICATE_PASSWORD `
+                  /tr 'http://timestamp.digicert.com' /td SHA256 (Join-Path $packageDir 'flowspace.exe')
+              if ($LASTEXITCODE -ne 0) {
+                  throw 'Code signing failed for flowspace.exe'
+              }
+          } else {
+              Write-Output 'Code signing skipped; certificate secrets are not configured'
+          }
+
+          choco install innosetup --no-progress --yes
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) {
+              throw 'Inno Setup compiler was not installed'
+          }
+          $installer = Join-Path $env:RUNNER_TEMP "$packageName-setup.exe"
+          & $iscc "/DAppSource=$packageDir" "/DOutputDir=$env:RUNNER_TEMP" `
+              "/DAppVersion=$displayVersion" `
+              "/DOutputBaseFilename=$packageName-setup" packaging\FlowSpace.iss
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path $installer)) {
+              throw 'Inno Setup installer creation failed'
+          }
+
+          if ($signTool) {
+              & $signTool.FullName sign /fd SHA256 /f $certificatePath `
+                  /p $env:WINDOWS_CERTIFICATE_PASSWORD `
+                  /tr 'http://timestamp.digicert.com' /td SHA256 $installer
+              if ($LASTEXITCODE -ne 0) {
+                  throw 'Code signing failed for installer'
+              }
+              foreach ($file in @((Join-Path $packageDir 'flowspace.exe'), $installer)) {
+                  & $signTool.FullName verify /pa /v $file
+                  if ($LASTEXITCODE -ne 0) {
+                      throw "Signature verification failed for $file"
+                  }
+              }
+              Remove-Item $certificatePath -Force
+          }
+
+          $installDir = Join-Path $env:RUNNER_TEMP "$packageName-installed"
+          $installProcess = Start-Process -FilePath $installer -ArgumentList @(
+              '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-',
+              "/DIR=$installDir"
+          ) -Wait -PassThru
+          if ($installProcess.ExitCode -ne 0 -or
+              -not (Test-Path (Join-Path $installDir 'flowspace.exe'))) {
+              throw 'Installer smoke test failed'
+          }
+          $uninstaller = Join-Path $installDir 'unins000.exe'
+          if (-not (Test-Path $uninstaller)) {
+              throw 'Installer smoke test could not find the uninstaller'
+          }
+          $uninstallProcess = Start-Process -FilePath $uninstaller `
+              -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' `
+              -Wait -PassThru
+          if ($uninstallProcess.ExitCode -ne 0 -or (Test-Path $installDir)) {
+              throw 'Uninstaller smoke test failed'
+          }
+
           $archive = Join-Path $env:RUNNER_TEMP "$packageName.zip"
           Compress-Archive -Path (Join-Path $packageDir '*') -DestinationPath $archive
           $verifyDir = Join-Path $env:RUNNER_TEMP "$packageName-verify"
           Expand-Archive -Path $archive -DestinationPath $verifyDir -Force
-          foreach ($file in @('flowspace.exe', 'README.md', 'LICENSE', 'licenses\spdlog-LICENSE')) {
+          foreach ($file in @('flowspace.exe', 'README.md', 'LICENSE',
+                              'THIRD-PARTY-NOTICES.txt', 'UNINSTALL.md',
+                              'licenses\spdlog-LICENSE')) {
               if (-not (Test-Path (Join-Path $verifyDir $file))) {
                   throw "ZIP verification failed; missing: $file"
               }
           }
+          if (-not (Test-Path $installer)) {
+              throw 'Installer verification failed; installer is missing'
+          }
 
           "archive=$archive" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "installer=$installer" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "package_name=$packageName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ${{ steps.package.outputs.package_name }}
-          path: ${{ steps.package.outputs.archive }}
+          path: |
+            ${{ steps.package.outputs.archive }}
+            ${{ steps.package.outputs.installer }}
 
   publish:
     name: Publish release
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
+    permissions:
+      contents: write
     runs-on: windows-latest
     steps:
       - name: Download packaged builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: FlowSpace-*-windows-*
           merge-multiple: true
@@ -228,9 +348,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = $env:GITHUB_REF_NAME
-          $archives = @(Get-ChildItem release -Filter '*.zip')
-          if ($archives.Count -eq 0) {
-              throw 'No release archives were downloaded'
+          $assets = @(Get-ChildItem release -File | Where-Object {
+              $_.Extension -in @('.zip', '.exe')
+          })
+          if ($assets.Count -eq 0) {
+              throw 'No release assets were downloaded'
           }
 
           gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
@@ -241,9 +363,9 @@ jobs:
               }
           }
 
-          foreach ($archive in $archives) {
-              gh release upload $tag $archive.FullName --repo $env:GITHUB_REPOSITORY --clobber
+          foreach ($asset in $assets) {
+              gh release upload $tag $asset.FullName --repo $env:GITHUB_REPOSITORY --clobber
               if ($LASTEXITCODE -ne 0) {
-                  throw "Could not upload $($archive.Name)"
+                  throw "Could not upload $($asset.Name)"
               }
           }
