@@ -1,0 +1,228 @@
+name: Windows Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  checks: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86
+            msystem: MINGW32
+            prefix: mingw32
+            gcc: mingw-w64-i686-gcc
+            binutils: mingw-w64-i686-binutils
+            ninja: mingw-w64-i686-ninja
+            ccache: mingw-w64-i686-ccache
+          - arch: x64
+            msystem: MINGW64
+            prefix: mingw64
+            gcc: mingw-w64-x86_64-gcc
+            binutils: mingw-w64-x86_64-binutils
+            ninja: mingw-w64-x86_64-ninja
+            ccache: mingw-w64-x86_64-ccache
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install MinGW toolchain
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            ${{ matrix.gcc }}
+            ${{ matrix.binutils }}
+            ${{ matrix.ninja }}
+            ${{ matrix.ccache }}
+
+      - name: Restore build caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\msys64\var\cache\pacman\pkg
+            .ccache
+          key: ${{ runner.os }}-${{ matrix.arch }}-build-${{ hashFiles('.github/workflows/release.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-build-
+
+      - name: Configure toolchain environment
+        shell: pwsh
+        run: |
+          $mingwBin = "C:\msys64\${{ matrix.prefix }}\bin"
+          Add-Content $env:GITHUB_PATH $mingwBin
+          "MINGW_BIN=$mingwBin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "CCACHE_DIR=$env:GITHUB_WORKSPACE\.ccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Log compiler versions
+        shell: pwsh
+        run: |
+          Write-Output "Architecture: ${{ matrix.arch }}"
+          & "$env:MINGW_BIN\gcc.exe" --version
+          & "$env:MINGW_BIN\g++.exe" --version
+          & "$env:MINGW_BIN\windres.exe" --version
+          cmake --version
+          ninja --version
+          ccache --version
+
+      - name: Generate application icon
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File scripts\make-icon.ps1
+
+      - name: Configure Release build
+        shell: pwsh
+        run: >
+          cmake -S . -B build\cmake -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CXX_COMPILER=$env:MINGW_BIN\g++.exe
+          -DCMAKE_C_COMPILER=$env:MINGW_BIN\gcc.exe
+          -DCMAKE_RC_COMPILER=$env:MINGW_BIN\windres.exe
+          -DCMAKE_MAKE_PROGRAM=$env:MINGW_BIN\ninja.exe
+          -DCMAKE_CXX_COMPILER_LAUNCHER=$env:MINGW_BIN\ccache.exe
+
+      - name: Build application and tests
+        shell: pwsh
+        run: cmake --build build\cmake --config Release
+
+      - name: Run tests
+        shell: pwsh
+        run: ctest --test-dir build\cmake --build-config Release --output-on-failure --output-junit test-results.xml
+
+      - name: Publish test report
+        if: always()
+        uses: dorny/test-reporter@v2
+        with:
+          name: CTest (${{ matrix.arch }})
+          path: build/cmake/test-results.xml
+          reporter: java-junit
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.arch }}
+          path: build\cmake\test-results.xml
+          if-no-files-found: warn
+
+      - name: Package application and dependencies
+        id: package
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -match '^refs/tags/(.+)$') {
+              $version = $Matches[1]
+          } else {
+              $version = $env:GITHUB_SHA.Substring(0, 7)
+          }
+
+          $packageName = "FlowSpace-$version-windows-${{ matrix.arch }}"
+          $packageDir = Join-Path $env:RUNNER_TEMP $packageName
+          $licenseDir = Join-Path $packageDir 'licenses'
+          New-Item -ItemType Directory -Force $licenseDir | Out-Null
+
+          Copy-Item build\cmake\flowspace.exe $packageDir
+          Copy-Item README.md, LICENSE $packageDir
+          Copy-Item external\spdlog\LICENSE (Join-Path $licenseDir 'spdlog-LICENSE')
+
+          $imports = & "$env:MINGW_BIN\objdump.exe" -p (Join-Path $packageDir 'flowspace.exe') |
+              Select-String 'DLL Name:' |
+              ForEach-Object { ($_ -split ':', 2)[1].Trim() } |
+              Sort-Object -Unique
+          $systemDlls = @(
+              'ADVAPI32.dll', 'COMCTL32.dll', 'COMDLG32.dll', 'DWMAPI.dll',
+              'GDI32.dll', 'KERNEL32.dll', 'OLE32.dll', 'OLEAUT32.dll',
+              'SHELL32.dll', 'SHCORE.dll', 'USER32.dll', 'UXTHEME.dll',
+              'UUID.dll', 'WINMM.dll', 'WS2_32.dll'
+          )
+          foreach ($dll in $imports) {
+              if ($systemDlls -contains $dll.ToUpperInvariant()) {
+                  continue
+              }
+
+              $runtimeDll = Join-Path $env:MINGW_BIN $dll
+              if (-not (Test-Path $runtimeDll)) {
+                  throw "Required runtime dependency was not found: $dll"
+              }
+              Copy-Item $runtimeDll $packageDir
+          }
+
+          $requiredFiles = @(
+              (Join-Path $packageDir 'flowspace.exe'),
+              (Join-Path $packageDir 'README.md'),
+              (Join-Path $packageDir 'LICENSE'),
+              (Join-Path $licenseDir 'spdlog-LICENSE')
+          )
+          foreach ($file in $requiredFiles) {
+              if (-not (Test-Path $file)) {
+                  throw "Required package file is missing: $file"
+              }
+          }
+
+          $archive = Join-Path $env:RUNNER_TEMP "$packageName.zip"
+          Compress-Archive -Path (Join-Path $packageDir '*') -DestinationPath $archive
+          $verifyDir = Join-Path $env:RUNNER_TEMP "$packageName-verify"
+          Expand-Archive -Path $archive -DestinationPath $verifyDir -Force
+          foreach ($file in @('flowspace.exe', 'README.md', 'LICENSE', 'licenses\spdlog-LICENSE')) {
+              if (-not (Test-Path (Join-Path $verifyDir $file))) {
+                  throw "ZIP verification failed; missing: $file"
+              }
+          }
+
+          "archive=$archive" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "package_name=$packageName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.package_name }}
+          path: ${{ steps.package.outputs.archive }}
+
+  publish:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - name: Download packaged builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: FlowSpace-*-windows-*
+          merge-multiple: true
+          path: release
+
+      - name: Upload release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $archives = @(Get-ChildItem release -Filter '*.zip')
+          if ($archives.Count -eq 0) {
+              throw 'No release archives were downloaded'
+          }
+
+          gh release view $tag 2>$null
+          if ($LASTEXITCODE -ne 0) {
+              gh release create $tag --generate-notes
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Could not create release $tag"
+              }
+          }
+
+          foreach ($archive in $archives) {
+              gh release upload $tag $archive.FullName --clobber
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Could not upload $($archive.Name)"
+              }
+          }
