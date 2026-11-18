@@ -8,9 +8,9 @@ lags one save cycle. Delete both to regenerate defaults.
   "schemaVersion": 1,
   "settings": {
     "hideMode": 0,                      // 0 = SW_HIDE, 1 = minimize
-    "showOverlay": true,                // brief workspace-name overlay on switch
-    "overlayAnimation": true,
-    "overlayAnimationMs": 180,
+    "showOverlay": true,                // compact switch notification after a workspace change
+    "overlayAnimation": "slide",        // "none" disables the fade/scale animation
+    "overlayAnimationMs": 180,          // fade duration (clamped to 80-200 ms)
     "switchByMouseMonitor": true,       // hotkeys act on the monitor under the cursor
     "wallpaperManagementEnabled": true, // master switch for per-workspace wallpapers
     "restoreWallpaperOnExit": true,     // put the original desktop back on Exit

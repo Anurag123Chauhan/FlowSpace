@@ -93,7 +93,8 @@ target_link_libraries(flowspace_engine PUBLIC flowspace_core flowspace_platform)
 # ------------------------------------------------------------------------------
 add_library(flowspace_ui STATIC
     src/ui/Theme.cpp
-    src/ui/Overlay.cpp
+    src/ui/SwitcherVisual.cpp
+    src/ui/SwitchNotification.cpp
     src/ui/TrayIcon.cpp
     src/ui/SwitcherPopup.cpp
     src/ui/MainWindow.cpp)

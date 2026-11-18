@@ -31,10 +31,10 @@ namespace flowspace::ui
         // Mixes a color toward white/black by factor (-1..1).
         COLORREF Adjust(COLORREF c, double factor);
 
-        // Fonts. Monitors are 96+ DPI aware via PerMonitorV2; sizes are in points and
-        // converted per-device-context with MulDiv.
-        HFONT CreateUiFont(int pointSize, bool bold = false, bool semibold = false);
-        HFONT CreateIconFont(int pointSize); // Segoe Fluent Icons / Segoe MDL2 Assets
+        // Fonts. Sizes are in points. Pass the monitor's DPI scale (1.0 == 96 DPI) for
+        // per-monitor UI; 0 uses the system DPI for legacy callers.
+        HFONT CreateUiFont(int pointSize, bool bold = false, bool semibold = false, double dpiScale = 0.0);
+        HFONT CreateIconFont(int pointSize, double dpiScale = 0.0); // Segoe Fluent Icons / Segoe MDL2 Assets
     }
 
     // Workspace icon identifiers mapped to Segoe MDL2 Assets glyphs (Win10) with a

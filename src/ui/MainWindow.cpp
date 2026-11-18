@@ -51,9 +51,9 @@ namespace flowspace::ui
             {L"Restore original wallpaper on exit", L"Put the user's wallpapers back when FlowSpace closes."},
             {L"Pause workspace management", L"Keep hotkeys alive but stop hiding/showing windows."},
             {L"Group new windows by application", L"A new window inherits the workspace of its app's other windows."},
-            {L"Show switch overlay", L"Display the workspace banner when switching."},
-            {L"Overlay animation", L"Cycle: slide / fade / scale / none."},
-            {L"Overlay duration", L"Milliseconds for the switch overlay animation."},
+            {L"Show switch notification", L"Display a compact notification after switching."},
+            {L"Notification animation", L"Cycle: fade / none."},
+            {L"Notification fade duration", L"Fade duration of the switch notification (80-200 ms)."},
         };
 
         std::wstring AnimationName(const std::string &style)

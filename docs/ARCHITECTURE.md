@@ -13,7 +13,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│ ui      Overlay · TrayIcon · SwitcherPopup · MainWindow  │  Win32 painting only
+│ ui      SwitchNotification · SwitcherPopup · TrayIcon · MainWindow · SwitcherVisual │  Win32/GDI only
 ├──────────────────────────────────────────────────────────┤
 │ engine  WorkspaceEngine   (orchestration, UI callbacks)  │
 ├──────────────────────────────────┬───────────────────────┤
@@ -50,10 +50,10 @@ today. This eliminates cross-thread HWND races by construction.
 4. COM STA (`CoInitializeEx`) for `IDesktopWallpaper` and shell APIs.
 5. Construct `AppContext`: `ConfigService`, `RecoveryManager`, `WorkspaceEngine` and the
    platform managers.
-6. Register UI window classes (Overlay, SwitcherPopup, MainWindow).
+6. Register UI window classes (SwitchNotification, SwitcherPopup, MainWindow).
 7. Create the hidden message window; `AppContext::Initialize()` wires:
    - `engine->Attach(window)` — hotkey registration + workspace init + monitor reconcile
-   - overlay callback (per-monitor overlay on switch)
+   - switch callback (compact per-monitor notification after a successful switch)
    - state-changed callback (settings window refresh + tray update)
    - tray icon + menu builder
    - WinEvent hooks (create/show/hide/destroy/movesizeend/foreground)

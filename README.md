@@ -132,7 +132,7 @@ src/
   platform/                  MonitorManager, WindowManager, ProcessInfo, WallpaperManager,
                              HotkeyManager, StartupManager, WinEventHook (Win32/COM)
   engine/WorkspaceEngine     orchestrates switching: hide/show, wallpaper, hotkey actions
-  ui/                        Theme, Overlay, TrayIcon, SwitcherPopup, MainWindow (settings)
+  ui/                        Theme, SwitcherVisual, SwitchNotification, SwitcherPopup, TrayIcon, MainWindow
 tests/test_core.cpp          self-contained test harness (no external framework)
 packaging/                   app.rc (icon + version), app.manifest (reference)
 docs/                        ARCHITECTURE.md, CONFIGURATION.md, TESTING.md

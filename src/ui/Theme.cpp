@@ -24,11 +24,26 @@ namespace flowspace::ui
         return RGB(channel(GetRValue(c)), channel(GetGValue(c)), channel(GetBValue(c)));
     }
 
-    HFONT Theme::CreateUiFont(int pointSize, bool bold, bool semibold)
+    namespace
+    {
+        int FontDpi(double dpiScale)
+        {
+            if (dpiScale > 0.0)
+            {
+                return static_cast<int>(96.0 * dpiScale + 0.5);
+            }
+            HDC dc = GetDC(nullptr);
+            const int dpi = GetDeviceCaps(dc, LOGPIXELSY);
+            ReleaseDC(nullptr, dc);
+            return dpi;
+        }
+    }
+
+    HFONT Theme::CreateUiFont(int pointSize, bool bold, bool semibold, double dpiScale)
     {
         // "Segoe UI Variable Text" ships with Windows 11; fall back to Segoe UI.
         LOGFONTW lf{};
-        lf.lfHeight = -MulDiv(pointSize, GetDeviceCaps(GetDC(nullptr), LOGPIXELSY), 72);
+        lf.lfHeight = -MulDiv(pointSize, FontDpi(dpiScale), 72);
         lf.lfWeight = bold ? FW_BOLD : (semibold ? FW_SEMIBOLD : FW_NORMAL);
         lf.lfCharSet = DEFAULT_CHARSET;
         lf.lfQuality = CLEARTYPE_QUALITY;
@@ -36,10 +51,10 @@ namespace flowspace::ui
         return CreateFontIndirectW(&lf);
     }
 
-    HFONT Theme::CreateIconFont(int pointSize)
+    HFONT Theme::CreateIconFont(int pointSize, double dpiScale)
     {
         LOGFONTW lf{};
-        lf.lfHeight = -MulDiv(pointSize, GetDeviceCaps(GetDC(nullptr), LOGPIXELSY), 72);
+        lf.lfHeight = -MulDiv(pointSize, FontDpi(dpiScale), 72);
         lf.lfWeight = FW_NORMAL;
         lf.lfCharSet = DEFAULT_CHARSET;
         wcscpy_s(lf.lfFaceName, L"Segoe Fluent Icons"); // Windows 11
