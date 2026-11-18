@@ -31,6 +31,8 @@ namespace flowspace::core
 
         // --- Dynamic Workspace CRUD ---
         void InitializeDefaultWorkspaces();
+        // Replaces the workspace list with a persisted one (ignored when empty).
+        void SetWorkspaces(std::vector<Workspace> workspaces);
         [[nodiscard]] std::vector<Workspace> GetWorkspaces() const;
         [[nodiscard]] std::optional<Workspace> GetWorkspace(const std::string &workspaceId) const;
 

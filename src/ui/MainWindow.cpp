@@ -1029,8 +1029,9 @@ namespace flowspace::ui
             }
             case HS_RULE_ADD:
             {
-                // Rule from the foreground window's executable, targeting the first workspace.
-                auto fg = ctx_.engine->GetForegroundWindowInfo();
+                // Rule from the app the user was in before opening Settings (the foreground
+                // window right now is this Settings window), targeting the first workspace.
+                auto fg = ctx_.engine->GetLastExternalForegroundWindow();
                 auto &rules = ctx_.config->Get().appRules;
                 core::AppRule rule;
                 rule.id = "rule-" + std::to_string(GetTickCount64());

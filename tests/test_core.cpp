@@ -134,6 +134,7 @@ namespace
                 .id = "rule-1", .enabled = true, .exeName = L"notepad.exe",
                 .targetWorkspaceId = "ws-1"});
             config.Get().monitorState[L"\\\\?\\DISPLAY#TEST#1"] = "ws-1";
+            config.Get().settings.wallpaperCaptureInitialized = true;
             CHECK(config.Save());
         }
         {
@@ -150,6 +151,8 @@ namespace
             CHECK(c.settings.overlayAnimationMs == 250);
             CHECK(c.appRules.size() == 1 && c.appRules[0].exeName == L"notepad.exe");
             CHECK(c.monitorState.count(L"\\\\?\\DISPLAY#TEST#1") == 1);
+            // Must survive a restart, or the user's original wallpaper is re-captured every launch.
+            CHECK(c.settings.wallpaperCaptureInitialized);
         }
     }
 

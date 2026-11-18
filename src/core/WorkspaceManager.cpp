@@ -1,7 +1,6 @@
 #include "core/WorkspaceManager.h"
 
 #include <algorithm>
-#include <atomic>
 #include <format>
 
 namespace flowspace::core
@@ -9,11 +8,26 @@ namespace flowspace::core
 
     namespace
     {
-
-        std::string GenerateWorkspaceId()
+        // Next "ws-N" id not used by any existing workspace (persisted ids included), so ids
+        // stay unique across restarts.
+        std::string GenerateWorkspaceId(const std::vector<Workspace> &existing)
         {
-            static std::atomic<uint64_t> counter{100};
-            return std::format("ws-{}", counter.fetch_add(1, std::memory_order_relaxed));
+            uint64_t next = 100;
+            for (const auto &ws : existing)
+            {
+                if (ws.id.starts_with("ws-"))
+                {
+                    try
+                    {
+                        next = std::max<uint64_t>(next, std::stoull(ws.id.substr(3)) + 1);
+                    }
+                    catch (const std::exception &)
+                    {
+                        // non-numeric suffix: cannot collide with a numeric one
+                    }
+                }
+            }
+            return std::format("ws-{}", next);
         }
 
     } // namespace
@@ -99,6 +113,18 @@ namespace flowspace::core
         return workspaces_;
     }
 
+    void WorkspaceManager::SetWorkspaces(std::vector<Workspace> workspaces)
+    {
+        std::scoped_lock lock(mutex_);
+        if (workspaces.empty())
+        {
+            return; // never run with zero workspaces
+        }
+        std::sort(workspaces.begin(), workspaces.end(),
+                  [](const Workspace &a, const Workspace &b) { return a.orderIndex < b.orderIndex; });
+        workspaces_ = std::move(workspaces);
+    }
+
     std::vector<Workspace> *WorkspaceManager::MutableWorkspaces()
     {
         // Deliberately no lock: the settings UI edits on the same thread that owns the
@@ -123,7 +149,7 @@ namespace flowspace::core
     {
         std::scoped_lock lock(mutex_);
         Workspace ws{
-            .id = GenerateWorkspaceId(),
+            .id = GenerateWorkspaceId(workspaces_),
             .name = std::move(name),
             .icon = std::move(icon),
             .accentColor = std::move(accentColor),
@@ -234,8 +260,7 @@ namespace flowspace::core
         }
 
         Workspace copy = *it;
-        static std::atomic<uint64_t> counter{900};
-        copy.id = std::format("ws-{}", counter.fetch_add(1, std::memory_order_relaxed));
+        copy.id = GenerateWorkspaceId(workspaces_);
         copy.name += " (copy)";
         workspaces_.insert(it + 1, copy);
 

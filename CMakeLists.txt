@@ -135,5 +135,13 @@ add_executable(flowspace_tests
 flowspace_apply_deps(flowspace_tests)
 target_link_libraries(flowspace_tests PRIVATE flowspace_core flowspace_platform)
 
+# 8. Engine integration tests: real WorkspaceEngine against child-process test windows.
+add_executable(flowspace_engine_tests
+    tests/test_engine.cpp)
+flowspace_apply_deps(flowspace_engine_tests)
+target_link_libraries(flowspace_engine_tests PRIVATE flowspace_engine flowspace_platform flowspace_core)
+target_link_options(flowspace_engine_tests PRIVATE -municode)
+
 enable_testing()
 add_test(NAME core_tests COMMAND flowspace_tests)
+add_test(NAME engine_tests COMMAND flowspace_engine_tests)

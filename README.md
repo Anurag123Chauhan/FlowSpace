@@ -75,7 +75,8 @@ Outputs into `build/cmake/`:
 |---|---|
 | `flowspace.exe` | The app (GUI subsystem, tray icon, hidden message window) |
 | `flowspace-diag.exe` | Read-only diagnostic CLI: monitors + manageable windows report |
-| `flowspace_tests.exe` | Core-logic test suite (137 checks) |
+| `flowspace_tests.exe` | Core-logic test suite |
+| `flowspace_engine_tests.exe` | Engine integration tests (spawns its own test windows; never touches yours) |
 
 A static `libstdc++`/`libgcc` link (`-static`) means the exe runs without MinGW runtime DLLs.
 The automated release workflow builds and tests an x64 package. It also checks the
@@ -117,6 +118,14 @@ Covers StringUtils (utf8/wide round trips, hex colors), ConfigService (defaults,
 corruption recovery, v0→v1 migration, normalization), RecoveryManager (journal round trip,
 corrupt-journal fail-safe), WorkspaceManager (CRUD, monitor reconciliation, adjacency,
 window assignment) and HotkeyManager (parsing, naming, conflict detection).
+
+```powershell
+& build\cmake\flowspace_engine_tests.exe
+```
+
+Drives the real `WorkspaceEngine` against windows owned by child processes it spawns (a window
+filter keeps your own windows untouched): workspace persistence and unique ids, reveal-all,
+moving a newly opened window, app rules, window-destroyed cleanup and monitor removal.
 
 See `docs/TESTING.md` for the manual integration checklist (live run, crash recovery,
 display-change, wallpaper restore).
