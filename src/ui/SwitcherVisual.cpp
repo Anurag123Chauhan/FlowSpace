@@ -7,7 +7,14 @@ namespace flowspace::ui::visual
 {
     double ScaleFor(const core::MonitorInfo &monitor)
     {
-        return std::max(1.0, std::max(monitor.dpiX, monitor.dpiY) / 96.0);
+        // Treat a missing/invalid DPI as 96 (100%) instead of propagating a bad scale.
+        const double dpiX = monitor.dpiX > 0 ? static_cast<double>(monitor.dpiX) : 96.0;
+        const double dpiY = monitor.dpiY > 0 ? static_cast<double>(monitor.dpiY) : 96.0;
+        const double dpi = std::max(dpiX, dpiY);
+
+        // Windows supports 80%-500% scaling. Clamp defensively, but keep sub-100%
+        // ratios intact (the previous max(1.0, ...) suppressed them).
+        return std::clamp(dpi / 96.0, 0.5, 5.0);
     }
 
     COLORREF Tint(COLORREF base, COLORREF accent, double amount)

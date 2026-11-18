@@ -306,7 +306,7 @@ namespace
             config->Load();
 
             engine->Attach(messageWindow);
-            engine->OnOverlayShow = [this](const core:: &ws, const std:Workspace:wstring &monitorStableId)
+            engine->OnOverlayShow = [this](const core::Workspace &ws, const std::wstring &monitorStableId)
             {
                 if (!config->Get().settings.showOverlay)
                 {

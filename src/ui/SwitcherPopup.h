@@ -10,9 +10,10 @@ namespace flowspace::ui
     /// <summary>
     /// Manual workspace selector: a compact, translucent Windows 11-style panel centered on
     /// the monitor it was opened for. Each row shows a monitor icon, the workspace name and
-    /// its number; the active row is accented. Click/Enter selects, digits 1-9 select directly,
-    /// Escape or clicking outside dismisses. Owned by the FlowSpace process, so it is excluded
-    /// from workspace management.
+    /// its number; the active row is accented. More than nine workspaces are shown in pages
+    /// with Prev/Next footer buttons (also Left/Right or PageUp/PageDown); Up/Down crosses
+    /// page boundaries. Click/Enter selects, digits 1-9 select directly, Escape or clicking
+    /// outside dismisses. Owned by the FlowSpace process, so it is excluded from management.
     /// </summary>
     class SwitcherPopup
     {
