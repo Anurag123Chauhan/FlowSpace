@@ -117,13 +117,9 @@ namespace flowspace::ui
             auto *pixels = static_cast<uint32_t *>(bits);
             std::fill(pixels, pixels + static_cast<size_t>(state.width) * state.height, 0u);
 
-            const RECT card{state.margin, state.margin,
-                            state.margin + state.cardW, state.margin + state.cardH};
+            const RECT card{state.margin, state.margin, state.margin + state.cardW, state.margin + state.cardH};
             const COLORREF panel = Theme::Sidebar;
-            const uint32_t opaque = 0xFF000000u |
-                                    (static_cast<uint32_t>(GetBValue(panel)) << 16) |
-                                    (static_cast<uint32_t>(GetGValue(panel)) << 8) |
-                                    static_cast<uint32_t>(GetRValue(panel));
+            const uint32_t opaque = 0xFF000000u | (static_cast<uint32_t>(GetBValue(panel)) << 16) | (static_cast<uint32_t>(GetGValue(panel)) << 8) | static_cast<uint32_t>(GetRValue(panel));
             for (int y = card.top; y < card.bottom; ++y)
             {
                 uint32_t *row = pixels + static_cast<size_t>(y) * state.width + card.left;
@@ -138,12 +134,10 @@ namespace flowspace::ui
 
             // Monitor icon on the left.
             const int iconSize = Scaled(30, s);
-            visual::DrawMonitorIcon(dc, card.left + Scaled(20, s), centerY - Scaled(13, s),
-                                    iconSize, accent, s);
+            visual::DrawMonitorIcon(dc, card.left + Scaled(20, s), centerY - Scaled(13, s), iconSize, accent, s);
 
             // Vertical separator.
-            RECT separator{card.left + Scaled(64, s), card.top + Scaled(18, s),
-                           card.left + Scaled(65, s), card.bottom - Scaled(18, s)};
+            RECT separator{card.left + Scaled(64, s), card.top + Scaled(18, s), card.left + Scaled(65, s), card.bottom - Scaled(18, s)};
             HBRUSH sepBrush = CreateSolidBrush(Theme::Border);
             FillRect(dc, &separator, sepBrush);
             DeleteObject(sepBrush);
@@ -155,8 +149,7 @@ namespace flowspace::ui
             HGDIOBJ oldFont = SelectObject(dc, nameFont);
             SetTextColor(dc, Theme::Text);
             RECT nameRect{textLeft, card.top + Scaled(13, s), textRight, card.top + Scaled(44, s)};
-            DrawTextW(dc, core::Utf8ToWide(state.workspace.name).c_str(), -1, &nameRect,
-                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+            DrawTextW(dc, core::Utf8ToWide(state.workspace.name).c_str(), -1, &nameRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
             SelectObject(dc, oldFont);
             DeleteObject(nameFont);
 
@@ -168,10 +161,8 @@ namespace flowspace::ui
             HFONT subFont = Theme::CreateUiFont(8, false, false, s);
             HGDIOBJ oldSubFont = SelectObject(dc, subFont);
             SetTextColor(dc, Theme::TextDim);
-            RECT subRect{textLeft, card.top + Scaled(44, s),
-                         card.right - Scaled(20, s), card.bottom - Scaled(12, s)};
-            DrawTextW(dc, secondary.c_str(), -1, &subRect,
-                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+            RECT subRect{textLeft, card.top + Scaled(44, s), card.right - Scaled(20, s), card.bottom - Scaled(12, s)};
+            DrawTextW(dc, secondary.c_str(), -1, &subRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
             SelectObject(dc, oldSubFont);
             DeleteObject(subFont);
 
@@ -193,8 +184,7 @@ namespace flowspace::ui
             DeleteObject(checkPen);
 
             GdiFlush();
-            visual::ApplyCardAlpha(pixels, state.width, state.height, card,
-                                   Scaled(14, s), state.margin, 240, s, Theme::Border);
+            visual::ApplyCardAlpha(pixels, state.width, state.height, card, Scaled(14, s), state.margin, 240, s, Theme::Border);
         }
 
         void PresentFrame(HWND hwnd, const NotificationState &state, double alpha, double zoom)
@@ -208,9 +198,7 @@ namespace flowspace::ui
             POINT dst{state.x + (state.width - w) / 2, state.y + (state.height - h) / 2};
             POINT src{0, 0};
             SIZE size{w, h};
-            BLENDFUNCTION blend{AC_SRC_OVER, 0,
-                                static_cast<BYTE>(std::clamp(alpha, 0.0, 1.0) * 255.0 + 0.5),
-                                AC_SRC_ALPHA};
+            BLENDFUNCTION blend{AC_SRC_OVER, 0, static_cast<BYTE>(std::clamp(alpha, 0.0, 1.0) * 255.0 + 0.5), AC_SRC_ALPHA};
             UpdateLayeredWindow(hwnd, nullptr, &dst, &size, state.memDc, &src, 0, &blend, ULW_ALPHA);
         }
 
@@ -304,9 +292,7 @@ namespace flowspace::ui
         RegisterClassW(&wc);
     }
 
-    void SwitchNotification::Show(HINSTANCE instance, const core::MonitorInfo &monitor,
-                                  const core::Workspace &workspace, int workspaceNumber,
-                                  const std::string &animationStyle, int animationMs)
+    void SwitchNotification::Show(HINSTANCE instance, const core::MonitorInfo &monitor, const core::Workspace &workspace, int workspaceNumber, const std::string &animationStyle, int animationMs)
     {
         auto *state = new NotificationState();
         state->workspace = workspace;
@@ -322,14 +308,12 @@ namespace flowspace::ui
         state->cardH = Scaled(80, s);
         state->width = state->cardW + state->margin * 2;
         state->height = state->cardH + state->margin * 2;
-        state->x = monitor.workArea.left +
-                   std::max(0, (monitor.workArea.width() - state->cardW) / 2) - state->margin;
+        state->x = monitor.workArea.left + std::max(0, (monitor.workArea.width() - state->cardW) / 2) - state->margin;
 
         // Bottom-center, just above the taskbar (workArea already excludes it).
         // The window rect includes the shadow margin, so offset by one margin here.
         const int bottomGap = Scaled(24, s);
-        state->y = monitor.workArea.top + monitor.workArea.height()
-                   - state->cardH - state->margin - bottomGap;
+        state->y = monitor.workArea.top + monitor.workArea.height() - state->cardH - state->margin - bottomGap;
         state->x = std::max(monitor.workArea.left, state->x);
         state->y = std::max(monitor.workArea.top, state->y);
 
@@ -340,11 +324,8 @@ namespace flowspace::ui
         }
         live[state->monitorId] = nullptr;
 
-        constexpr DWORD exStyle = WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW |
-                                  WS_EX_NOACTIVATE | WS_EX_TRANSPARENT;
-        HWND hwnd = CreateWindowExW(exStyle, kClassName, L"", WS_POPUP,
-                                    state->x, state->y, state->width, state->height,
-                                    nullptr, nullptr, instance, state);
+        constexpr DWORD exStyle = WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT;
+        HWND hwnd = CreateWindowExW(exStyle, kClassName, L"", WS_POPUP, state->x, state->y, state->width, state->height, nullptr, nullptr, instance, state);
         if (!hwnd)
         {
             live.erase(state->monitorId);

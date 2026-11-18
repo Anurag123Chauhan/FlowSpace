@@ -16,9 +16,7 @@ namespace flowspace::ui
     class SwitchNotification
     {
     public:
-        static void Show(HINSTANCE instance, const core::MonitorInfo &monitor,
-                         const core::Workspace &workspace, int workspaceNumber,
-                         const std::string &animationStyle, int animationMs);
+        static void Show(HINSTANCE instance, const core::MonitorInfo &monitor, const core::Workspace &workspace, int workspaceNumber, const std::string &animationStyle, int animationMs);
     };
 
     // Registers the notification window class once at startup.
