@@ -9,7 +9,7 @@
 #include "platform/WallpaperManager.h"
 #include "platform/WinEventHook.h"
 #include "ui/MainWindow.h"
-#include "ui/Overlay.h"
+#include "ui/SwitchNotification.h"
 #include "ui/SwitcherPopup.h"
 #include "ui/TrayIcon.h"
 
@@ -327,9 +327,9 @@ namespace
                                 break;
                             }
                         }
-                        flowspace::ui::OverlayWindow::Show(hinstance, mon, ws, number,
-                                                           config->Get().settings.overlayAnimation,
-                                                           config->Get().settings.overlayAnimationMs);
+                        flowspace::ui::SwitchNotification::Show(hinstance, mon, ws, number,
+                                                                config->Get().settings.overlayAnimation,
+                                                                config->Get().settings.overlayAnimationMs);
                         return;
                     }
                 }
@@ -427,7 +427,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int nCmdShow)
         app.wallpaper, app.hotkeys);
 
     // UI classes.
-    flowspace::ui::OverlayWindow::RegisterOverlayClass(hInstance);
+    flowspace::ui::RegisterSwitchNotificationClass(hInstance);
     flowspace::ui::RegisterSwitcherClass(hInstance);
     flowspace::ui::MainWindow::RegisterMainWindowClass(hInstance);
 
