@@ -89,7 +89,7 @@ flowspace_apply_deps(flowspace_engine)
 target_link_libraries(flowspace_engine PUBLIC flowspace_core flowspace_platform)
 
 # ------------------------------------------------------------------------------
-# 4. UI: overlay, tray, switcher, settings window
+# 4. UI: switcher, notification, tray, settings window
 # ------------------------------------------------------------------------------
 add_library(flowspace_ui STATIC
     src/ui/Theme.cpp

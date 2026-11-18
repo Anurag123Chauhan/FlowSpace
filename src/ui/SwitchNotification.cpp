@@ -254,7 +254,8 @@ namespace flowspace::ui
                 RenderCard(*state);
                 state->startTick = GetTickCount64();
                 Animate(hwnd, *state, 0);
-                SetTimer(hwnd, kTimerId, kFrameMs, nullptr);
+                // The timer is installed by Show() once the window exists, so a failure
+                // can be handled without destroying the window inside WM_CREATE.
                 return 0;
             }
             case WM_TIMER:
@@ -333,6 +334,14 @@ namespace flowspace::ui
             return;
         }
         live[state->monitorId] = hwnd;
+
+        // Without WM_TIMER the notification would never animate or dismiss itself.
+        // Fail cleanly instead of leaving a stuck window on screen.
+        if (!SetTimer(hwnd, kTimerId, kFrameMs, nullptr))
+        {
+            DestroyWindow(hwnd); // WM_DESTROY frees the bitmap, state and monitor entry
+            return;
+        }
         ShowWindow(hwnd, SW_SHOWNOACTIVATE);
     }
 }
