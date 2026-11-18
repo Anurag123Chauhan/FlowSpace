@@ -21,6 +21,9 @@ namespace flowspace::ui
         // Adds the icon; existing icon is replaced on re-call (e.g. pause state change).
         bool Update(bool paused);
 
+        // Explorer restarted ("TaskbarCreated"): the old icon is gone, add it again.
+        bool Readd() { added_ = false; return Update(paused_); }
+
         // Called by the message window on the tray callback message:
         // returns the selected menu command id (0 when the menu was dismissed), or
         // -1 when the event was a plain left-click (settings open).

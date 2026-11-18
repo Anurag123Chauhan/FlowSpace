@@ -17,6 +17,8 @@
 #include <objbase.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
+#include <cstdlib>
+#include <exception>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -39,6 +41,35 @@ namespace
     constexpr UINT WM_APP_TRAY = WM_APP + 1; // tray icon callback message
     constexpr UINT kTrayMenuBase = 5000;     // settings/reveal/pause/exit at +0..+3
     // workspace items: kTrayMenuBase + 100 + monitorIndex*25 + workspaceIndex
+
+    // Broadcast by Explorer when the taskbar is (re)created; the tray icon must be re-added.
+    const UINT WM_TASKBAR_CREATED = RegisterWindowMessageW(L"TaskbarCreated");
+
+    // Last-resort crash path: un-hide every journaled window so a FlowSpace crash never
+    // leaves the user's apps invisible. Kept to plain Win32 calls; state may be damaged.
+    const flowspace::core::RecoveryManager *g_crashJournal = nullptr;
+
+    void RevealJournaledWindowsOnCrash()
+    {
+        if (!g_crashJournal)
+        {
+            return;
+        }
+        for (const auto &entry : g_crashJournal->Entries())
+        {
+            DWORD pid = 0;
+            if (IsWindow(entry.hwnd) && GetWindowThreadProcessId(entry.hwnd, &pid) && pid == entry.processId)
+            {
+                ShowWindowAsync(entry.hwnd, entry.wasMinimized ? SW_SHOWMINNOACTIVE : SW_SHOWNOACTIVATE);
+            }
+        }
+    }
+
+    LONG WINAPI CrashFilter(EXCEPTION_POINTERS *)
+    {
+        RevealJournaledWindowsOnCrash();
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
 
     std::wstring ExpandEnv(const wchar_t *text)
     {
@@ -259,6 +290,14 @@ namespace
         static LRESULT CALLBACK MessageWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         {
             auto *app = reinterpret_cast<AppContext *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+            if (msg == WM_TASKBAR_CREATED && WM_TASKBAR_CREATED != 0)
+            {
+                if (app)
+                {
+                    app->tray.Readd();
+                }
+                return 0;
+            }
             switch (msg)
             {
             case WM_CREATE:
@@ -291,6 +330,18 @@ namespace
                     {
                         app->HandleTrayCommand(cmd);
                     }
+                }
+                return 0;
+            case WM_QUERYENDSESSION:
+                return TRUE;
+            case WM_ENDSESSION:
+                // Logoff/shutdown: the process may be terminated right after this returns,
+                // so reveal hidden windows and restore wallpaper now.
+                if (wParam && app)
+                {
+                    spdlog::info("Session ending; revealing windows.");
+                    app->Shutdown();
+                    spdlog::default_logger()->flush();
                 }
                 return 0;
             case WM_DESTROY:
@@ -373,8 +424,15 @@ namespace
         }
 
         // Graceful shutdown: unregister hotkeys, reveal hidden windows, restore wallpapers.
+        bool shutDown = false;
+
         void Shutdown()
         {
+            if (shutDown)
+            {
+                return; // already done (e.g. on WM_ENDSESSION)
+            }
+            shutDown = true;
             hooks.Uninstall();
             tray.Shutdown();
             const bool restore = config->Get().settings.restoreWallpaperOnExit;
@@ -421,6 +479,13 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int nCmdShow)
     app.backupPath = dataDir + L"\\config.backup.json";
     app.journalPath = dataDir + L"\\journal.json";
     app.recovery = std::make_unique<flowspace::core::RecoveryManager>(app.journalPath);
+    g_crashJournal = app.recovery.get();
+    SetUnhandledExceptionFilter(&CrashFilter);
+    std::set_terminate([]
+                       {
+                           RevealJournaledWindowsOnCrash();
+                           std::abort();
+                       });
     app.config = std::make_unique<flowspace::core::ConfigService>(app.configPath, app.backupPath);
     app.engine = std::make_unique<flowspace::engine::WorkspaceEngine>(
         app.monitors, app.windows, app.workspaces, *app.config, *app.recovery,
@@ -469,6 +534,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int nCmdShow)
     }
 
     app.Shutdown();
+    g_crashJournal = nullptr; // app (and its journal) is about to be destroyed
     spdlog::info("FlowSpace stopped.");
     spdlog::shutdown();
 

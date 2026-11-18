@@ -164,6 +164,7 @@ namespace flowspace::core
                 {"paused", c.settings.paused},
                 {"groupWindowsByApplication", c.settings.groupWindowsByApplication},
                 {"showOverlay", c.settings.showOverlay},
+                {"wallpaperCaptureInitialized", c.settings.wallpaperCaptureInitialized},
                 {"animation", json{{"enabled", c.settings.showOverlay},
                                    {"style", c.settings.overlayAnimation},
                                    {"durationMs", c.settings.overlayAnimationMs}}},
@@ -456,6 +457,10 @@ namespace flowspace::core
     bool ConfigService::Save()
     {
         namespace fs = std::filesystem;
+        if (beforeSave_)
+        {
+            beforeSave_(config_);
+        }
         try
         {
             fs::path main(configPath_);

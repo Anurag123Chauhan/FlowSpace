@@ -62,6 +62,7 @@ namespace flowspace::engine
                         core::RecoveryManager &recovery,
                         platform::WallpaperManager &wallpaper,
                         platform::HotkeyManager &hotkeys);
+        ~WorkspaceEngine();
 
         // Creates nothing; the message window is created by the app and passed here.
         void Attach(HWND messageWindow);
@@ -76,6 +77,7 @@ namespace flowspace::engine
         SwitchResult SwitchRelative(const std::wstring &monitorStableId, SwitchDirection direction);
         SwitchResult SwitchByNumber(const std::wstring &monitorStableId, int numberOneBased);
         bool MoveActiveWindowToWorkspace(const std::string &workspaceId);
+        bool MoveWindowToWorkspace(HWND hwnd, const std::string &workspaceId);
         bool MoveActiveWindowRelative(SwitchDirection direction);
         bool MoveActiveWindowByNumber(int numberOneBased);
         void RevealAllWindows(); // emergency reveal-all; also used on clean shutdown
@@ -103,6 +105,8 @@ namespace flowspace::engine
         [[nodiscard]] core::Workspace &WorkspaceAt(size_t index);        // mutable reference for editors
         [[nodiscard]] std::vector<core::MonitorInfo> GetMonitors() const;
         [[nodiscard]] core::WindowInfo GetForegroundWindowInfo() const;
+        // Last foreground window that belonged to another app (FlowSpace's own windows ignored).
+        [[nodiscard]] core::WindowInfo GetLastExternalForegroundWindow() const;
         std::string CreateWorkspace(const std::string &name);
         void RenameWorkspaceIndex(int index, const std::string &name);
         void DuplicateWorkspaceIndex(int index);
@@ -123,7 +127,13 @@ namespace flowspace::engine
 
         bool IsBusy() const { return switchInProgress_; }
 
+        // Test seam: when set, only windows accepted by the filter are ever managed.
+        void SetWindowFilter(std::function<bool(HWND)> filter) { windowFilter_ = std::move(filter); }
+
     private:
+        [[nodiscard]] std::vector<core::WindowInfo> DiscoverManagedWindows() const;
+        [[nodiscard]] bool PassesFilter(HWND hwnd) const { return !windowFilter_ || windowFilter_(hwnd); }
+        [[nodiscard]] std::optional<core::WindowInfo> FindManagedWindow(HWND hwnd) const;
         // --- switching internals ---
         bool ApplySwitch(const std::wstring &monitorStableId, const std::string &workspaceId, SwitchResult &result);
         std::string ResolveAdjacentWorkspace(const std::wstring &monitorStableId, SwitchDirection direction) const;
@@ -132,6 +142,7 @@ namespace flowspace::engine
 
         // --- window event internals ---
         void ProcessNewWindow(HWND hwnd);
+        void AdoptNewWindow(const core::WindowInfo &window);
         void ProcessShownWindow(HWND hwnd);
         void ProcessMovedWindow(HWND hwnd);
         bool MatchesRule(const core::WindowInfo &window, const core::AppRule &rule) const;
@@ -146,5 +157,7 @@ namespace flowspace::engine
         platform::HotkeyManager &hotkeys_;
         HWND messageWindow_ = nullptr;
         bool switchInProgress_ = false;
+        std::function<bool(HWND)> windowFilter_;
+        HWND lastExternalForeground_ = nullptr;
     };
 }

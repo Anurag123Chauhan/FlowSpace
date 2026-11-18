@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/Models.h"
+#include <functional>
 #include <string>
 #include <vector>
 #include <map>
@@ -116,6 +117,10 @@ namespace flowspace::core
         [[nodiscard]] const Config &Get() const { return config_; }
         [[nodiscard]] Config &Get() { return config_; }
 
+        // Called at the start of every Save() so live runtime state (the engine's workspace
+        // list) is copied into the config, whichever code path triggers the save.
+        void SetBeforeSave(std::function<void(Config &)> hook) { beforeSave_ = std::move(hook); }
+
         // Default 4-workspace setup, used for a fresh install and by migration from v0.
         static void ApplyDefaultWorkspaces(Config &config);
 
@@ -127,5 +132,6 @@ namespace flowspace::core
         std::wstring configPath_;
         std::wstring backupPath_;
         Config config_;
+        std::function<void(Config &)> beforeSave_;
     };
 }
