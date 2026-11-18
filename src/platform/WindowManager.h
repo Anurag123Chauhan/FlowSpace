@@ -69,6 +69,11 @@ namespace flowspace::platform
         // Snapshot of the foreground window (or an empty snapshot with hwnd == nullptr).
         [[nodiscard]] core::WindowInfo GetForegroundWindow() const;
 
+        // Topmost manageable window containing the cursor (Z-order aware). Preferred over
+        // the foreground window for cursor-relative actions, which can otherwise act on a
+        // stale window left over from a previous monitor.
+        [[nodiscard]] core::WindowInfo GetWindowUnderCursor() const;
+
         // Re-resolves the monitor stable id for a window (used after the user drags it).
         [[nodiscard]] std::wstring GetMonitorIdForWindow(HWND hwnd) const;
 
@@ -81,6 +86,8 @@ namespace flowspace::platform
     private:
         // Enumerates top-level windows. The context is an EnumWindowsContext* passed through LPARAM.
         static BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam);
+        // Finds the first manageable window containing the cursor (EnumWindows is Z-ordered).
+        static BOOL CALLBACK CursorWindowProc(HWND hwnd, LPARAM lParam);
         // Returns true if the window is DWM-cloaked (eg: minimized UWP app, another virtual desktop) and optionally provides the cloak reason
         [[nodiscard]] static bool IsWindowCloaked(HWND hwnd, DWORD *outCloakReason = nullptr);
         // Return true if the window is a system or shell window (eg: taskbar, start menu, etc.) and optionally provide a reason code for the exclusion

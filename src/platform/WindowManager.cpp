@@ -21,6 +21,13 @@ namespace flowspace::platform
             std::vector<core::WindowInfo> *results{nullptr};
         };
 
+        struct CursorWindowContext
+        {
+            const WindowManager *manager{nullptr};
+            POINT point{};
+            HWND found{nullptr};
+        };
+
         // Minimal RAII owner for Win32 HANDLEs. Replaces wil::unique_handle, which is
         // MSVC-oriented and not shipped with the MinGW toolchain.
         struct HandleCloser
@@ -377,8 +384,7 @@ namespace flowspace::platform
 
         WINDOWPLACEMENT placement{};
         placement.length = sizeof(placement);
-        if (state.restoreRect.right > state.restoreRect.left
-            && state.restoreRect.bottom > state.restoreRect.top)
+        if (state.restoreRect.right > state.restoreRect.left && state.restoreRect.bottom > state.restoreRect.top)
         {
             if (!GetWindowPlacement(hwnd, &placement))
             {
@@ -406,6 +412,8 @@ namespace flowspace::platform
         return ok != FALSE;
     }
 
+    // returns a snapshot of the foreground window, or an empty snapshot with hwnd == nullptr if no foreground window is present or it is unmanageable.
+    // foreground window = the window that is currently receiving keyboard input (or the last one that did, if none are active)
     core::WindowInfo WindowManager::GetForegroundWindow() const
     {
         const HWND hwnd = ::GetForegroundWindow();
@@ -421,6 +429,53 @@ namespace flowspace::platform
         for (const auto &win : DiscoverWindows(WindowDiscoveryOptions{.includeUnmanageableInReport = false}))
         {
             if (win.hwnd == hwnd)
+            {
+                return win;
+            }
+        }
+        return {};
+    }
+
+    BOOL CALLBACK WindowManager::CursorWindowProc(HWND hwnd, LPARAM lParam)
+    {
+        auto *context = reinterpret_cast<CursorWindowContext *>(lParam);
+        if (!context->manager->IsManageableWindow(hwnd))
+        {
+            return TRUE;
+        }
+
+        RECT rect{};
+        if (!GetWindowRect(hwnd, &rect))
+        {
+            return TRUE;
+        }
+        if (context->point.x < rect.left || context->point.x >= rect.right || context->point.y < rect.top || context->point.y >= rect.bottom)
+        {
+            return TRUE;
+        }
+
+        context->found = hwnd;
+        return FALSE; // EnumWindows walks topmost-first, so the first hit is the one the user sees
+    }
+
+    core::WindowInfo WindowManager::GetWindowUnderCursor() const
+    {
+        POINT point{};
+        if (!GetCursorPos(&point))
+        {
+            return {};
+        }
+
+        CursorWindowContext context{this, point, nullptr};
+        EnumWindows(&WindowManager::CursorWindowProc, reinterpret_cast<LPARAM>(&context));
+        if (context.found == nullptr)
+        {
+            return {};
+        }
+
+        for (const auto &win : DiscoverWindows(WindowDiscoveryOptions{.includeUnmanageableInReport = false}))
+        {
+            if (win.hwnd == context.found)
             {
                 return win;
             }

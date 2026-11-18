@@ -75,7 +75,7 @@ namespace flowspace::engine
         SwitchResult SwitchMonitorToWorkspace(const std::wstring &monitorStableId, const std::string &workspaceId);
         SwitchResult SwitchRelative(const std::wstring &monitorStableId, SwitchDirection direction);
         SwitchResult SwitchByNumber(const std::wstring &monitorStableId, int numberOneBased);
-        bool MoveActiveWindowToWorkspace(const std::string &workspaceId);
+        bool MoveActiveWindowToWorkspace(const std::string &workspaceId, const std::wstring &monitorStableId = {}, const core::WindowInfo *window = nullptr);
         bool MoveActiveWindowRelative(SwitchDirection direction);
         bool MoveActiveWindowByNumber(int numberOneBased);
         void RevealAllWindows(); // emergency reveal-all; also used on clean shutdown
@@ -100,7 +100,7 @@ namespace flowspace::engine
 
         // --- UI facade (settings window convenience accessors) ---
         [[nodiscard]] std::vector<core::Workspace> GetWorkspaces() const; // sorted by orderIndex
-        [[nodiscard]] core::Workspace &WorkspaceAt(size_t index);        // mutable reference for editors
+        [[nodiscard]] core::Workspace &WorkspaceAt(size_t index);         // mutable reference for editors
         [[nodiscard]] std::vector<core::MonitorInfo> GetMonitors() const;
         [[nodiscard]] core::WindowInfo GetForegroundWindowInfo() const;
         std::string CreateWorkspace(const std::string &name);
@@ -127,6 +127,12 @@ namespace flowspace::engine
         // --- switching internals ---
         bool ApplySwitch(const std::wstring &monitorStableId, const std::string &workspaceId, SwitchResult &result);
         std::string ResolveAdjacentWorkspace(const std::wstring &monitorStableId, SwitchDirection direction) const;
+        // Resolves a monitor the workspace manager actually knows about, using the
+        // window's own monitor, then the monitor under the cursor, then the primary.
+        std::wstring ResolveWindowActionMonitor(const core::WindowInfo &window) const;
+        // Cursor-relative first; falls back to the foreground snapshot only when no
+        // manageable window is under the pointer.
+        core::WindowInfo ResolveMoveWindow() const;
         void HideWindowInternal(const core::WindowInfo &window, const std::string &workspaceId);
         void ShowWindowInternal(HWND hwnd, bool wasMinimized);
 
