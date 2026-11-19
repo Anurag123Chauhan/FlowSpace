@@ -929,7 +929,24 @@ namespace flowspace::engine
 
     std::vector<core::MonitorInfo> WorkspaceEngine::GetMonitors() const
     {
-        return monitors_.EnumerateMonitors();
+        // Enumerate currently connected monitors, then merge in the active workspace
+        // assignment tracked by WorkspaceManager (monitors_.EnumerateMonitors() leaves
+        // activeWorkspaceId empty).
+        const auto detected = monitors_.EnumerateMonitors();
+        std::vector<core::MonitorInfo> result;
+        result.reserve(detected.size());
+        for (const auto &mon : detected)
+        {
+            if (auto info = workspaces_.GetMonitor(mon.stableId))
+            {
+                result.push_back(*info);
+            }
+            else
+            {
+                result.push_back(mon);
+            }
+        }
+        return result;
     }
 
     core::WindowInfo WorkspaceEngine::GetForegroundWindowInfo() const
@@ -1137,7 +1154,10 @@ namespace flowspace::engine
             return;
         }
 
-        (void)wallpaper_.SetPosition(static_cast<platform::WallpaperPosition>(fit));
+        // Note: IDesktopWallpaper::SetPosition is global (affects every monitor).
+        // It is intentionally NOT called here so that applying one monitor's
+        // wallpaper does not change another monitor's position. Position is a
+        // per-desktop setting, not per-monitor.
         if (wallpaper_.SetWallpaper(monitorStableId, imagePath))
         {
             spdlog::info("Wallpaper applied: monitor '{}' -> '{}' (fit={})",

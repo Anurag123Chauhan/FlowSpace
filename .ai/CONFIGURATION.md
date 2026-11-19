@@ -72,6 +72,8 @@ lags one save cycle. Delete both to regenerate defaults.
 | `overlayAnimationMs` | int | 180 | Fade duration, clamped to 0-2000 ms on load |
 | `wallpaperCaptureInitialized` | bool | false | Set once original wallpapers have been captured |
 
+The settings UI follows the Windows apps light/dark preference automatically; there is no persisted theme option.
+
 ## Actions (`HotkeyAction` enum)
 
 | # | Action | Default binding |

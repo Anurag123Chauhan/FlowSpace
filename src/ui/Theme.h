@@ -50,7 +50,7 @@ namespace flowspace::ui
 
         // NOTE: glyphs are Segoe MDL2 Assets codepoints.
         inline constexpr IconDef kIcons[] = {
-            {L"grid", L"Grid", 0xE80F},
+            {L"grid", L"Grid", 0xE8A9},
             {L"code", L"Code", 0xE943},
             {L"book", L"Research", 0xE736},
             {L"home", L"Home", 0xE80F + 0}, // Home

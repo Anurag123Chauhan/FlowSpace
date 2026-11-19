@@ -78,7 +78,7 @@ target_link_libraries(flowspace_platform PUBLIC flowspace_core
     # System import libraries (propagated to every consumer of the platform layer).
     user32 gdi32 shell32 advapi32 ole32 oleaut32
     comdlg32 comctl32 msimg32 uuid
-    dwmapi shcore uxtheme)
+    dwmapi shcore uxtheme gdiplus)
 
 # ------------------------------------------------------------------------------
 # 3. Engine: workspace orchestration
@@ -93,6 +93,7 @@ target_link_libraries(flowspace_engine PUBLIC flowspace_core flowspace_platform)
 # ------------------------------------------------------------------------------
 add_library(flowspace_ui STATIC
     src/ui/Theme.cpp
+    src/ui/DesignSystem.cpp
     src/ui/SwitcherVisual.cpp
     src/ui/SwitchNotification.cpp
     src/ui/TrayIcon.cpp
