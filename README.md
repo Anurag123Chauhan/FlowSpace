@@ -1,150 +1,91 @@
 # FlowSpace
 
-Independent per-monitor workspace manager for Windows 10/11. Each monitor gets its own set
-of workspaces (named, colored, wallpaper-capable); switching a monitor hides its windows and
-shows another set — like virtual desktops, but per monitor, with full crash recovery.
+**One PC, many workspaces — one per monitor.**
+
+FlowSpace gives every monitor its own independent set of workspaces. Switch workspaces on one screen without touching the others — like virtual desktops, but per monitor. Your windows, wallpapers, and focus stay exactly where you put them.
+
+## How FlowSpace makes life easier
+
+| Situation | Without FlowSpace | With FlowSpace |
+|-----------|-------------------|----------------|
+| **Work + personal on the same PC** | One cluttered desktop, everything mixed together | Monitor 1 = Work (code, email, Slack); Monitor 2 = Personal (music, browser, notes). Switch independently. |
+| **Multitasking across projects** | Alt+Tab through dozens of windows | Each monitor shows only the workspace you need. One hotkey flips the whole screen. |
+| **Accidentally closed or crashed** | Windows are gone | FlowSpace journals hidden windows and restores them on next start — even after a crash or power loss. |
+| **Different moods, different desktops** | Same wallpaper everywhere | Each workspace can have its own wallpaper per monitor. Work = focused; Gaming = vibrant. |
+
+## Get started
+
+### Download
+
+Get the latest release from the [Releases page](https://github.com/Anurag123Chauhan/FlowSpace/releases):
+
+- **Installer** (`FlowSpace-<version>-windows-x64-setup.exe`) — recommended. Adds Start Menu and optional desktop shortcut.
+- **ZIP** (`FlowSpace-<version>-windows-x64.zip`) — portable. Extract anywhere and run `flowspace.exe`.
+
+No compiler, CMake, or source code needed.
+
+### Install & run
+
+1. Download and run the installer (or extract the ZIP).
+2. FlowSpace starts hidden in the system tray (blue icon).
+3. Configuration and logs live at `%LOCALAPPDATA%\FlowSpace\`.
+
+To uninstall: exit FlowSpace from the tray, then use **Installed apps** in Windows Settings or **Uninstall FlowSpace** from the Start Menu. See [UNINSTALL.md](UNINSTALL.md) for details.
+
+## How to use it
+
+FlowSpace lives in your tray and is controlled mostly by keyboard:
+
+| Hotkey | What it does |
+|--------|--------------|
+| `Ctrl+Alt+Left` / `Ctrl+Alt+Right` | Switch to previous/next workspace on the monitor under your mouse |
+| `Ctrl+Alt+1` … `Ctrl+Alt+9` | Jump directly to workspace 1–9 |
+| `Ctrl+Alt+Shift+Left` / `Ctrl+Alt+Right` | Move the active window to the previous/next workspace |
+| `Ctrl+Alt+Space` | Open the workspace switcher popup (arrows + Enter to select) |
+| `Ctrl+Alt+F12` | Reveal all hidden windows |
+| `Ctrl+Alt+O` | Open Settings |
+
+Right-click the tray icon to switch workspaces per monitor, pause, reveal all, or open Settings. Left-click the tray icon to open Settings.
+
+### Settings
+
+Open Settings (`Ctrl+Alt+O` or tray → Open Settings) to:
+
+- **Workspaces** — create, rename, recolor, reorder, duplicate, or delete workspaces
+- **Wallpaper** — assign a different wallpaper to each workspace, per monitor
+- **Hotkeys** — change or disable shortcuts (conflicts are flagged automatically)
+- **Behavior** — hide vs. minimize windows, start with Windows, pause management, and more
+- **App Rules** — automatically send specific apps (e.g. notepad.exe) to a workspace
+- **Recovery** — view and restore hidden windows from the journal
 
 ## Features
 
-- **Per-monitor workspaces** — switch workspaces on one monitor without touching the others.
-- **Window hide/show with journal recovery** — hidden windows are journaled to disk and
-  restored automatically on the next start, even after a crash or power loss.
-- **Per-workspace wallpapers** via `IDesktopWallpaper` (per-monitor, per-workspace), with the
-  original desktop captured and restored on exit.
-- **Global hotkeys** — next/previous workspace, jump to workspace 1–9, move window to another
-  workspace, workspace switcher popup, reveal all, settings. Conflicts are detected and reported.
-- **Tray icon** with workspace menu, pause, reveal-all and exit.
-- **Overlay** shows the active workspace briefly on switch; a Ctrl+Alt+Space switcher popup
-  lists workspaces.
-- **Settings window** with pages: Workspaces (create/rename/recolor/reorder/duplicate/reset),
-  Appearance, Wallpaper, Hotkeys, Windows (rules), Advanced (recovery, startup, diagnostics).
-- **Robust config**: `config.json` with a rotating backup — a corrupt main file is recovered
-  from the backup automatically; a corrupt journal is discarded (fail-safe).
+- **Per-monitor workspaces** — each monitor has its own active workspace and switch history. Nothing on monitor B changes when monitor A switches.
+- **Window hide/show with crash recovery** — hidden windows are journaled to disk before being hidden, and restored automatically on the next start — even after a crash or power loss.
+- **Per-workspace wallpapers** — each workspace can have its own image per monitor. Your original desktop is captured and restored on exit.
+- **Global hotkeys** with conflict detection — two shortcuts can't silently override each other.
+- **Tray icon** — per-monitor workspace menu, pause, reveal-all, exit.
+- **Overlay & switcher popup** — brief on-screen notification after switching; `Ctrl+Alt+Space` lists all workspaces.
+- **Robust config** — `config.json` with a rotating backup. A corrupt main file recovers from the backup automatically.
 
-## Requirements
+## System requirements
 
-- Windows 10 (1903+) or Windows 11.
-- The release workflow produces packages for x64 Windows.
-- Building from source requires a MinGW-w64 UCRT64 toolchain, CMake, and Ninja. The helper
-  script defaults to `C:\msys64\ucrt64\bin`; that path can be overridden with `-MingwBin`.
-- No admin rights required. Dependencies are vendored: spdlog (`external/spdlog`) and
-  nlohmann/json (`external/nlohmann`).
+- Windows 10 (1903+) or Windows 11, x64
+- No administrator rights required
 
-## Download and use
+## AI agent documentation
 
-For normal use, download the latest `FlowSpace-<version>-windows-x64-setup.exe` from the
-[Releases page](https://github.com/Anurag123Chauhan/FlowSpace/releases) and run it, or
-download the matching `FlowSpace-<version>-windows-x64.zip`, extract it to a folder of your
-choice, and run `flowspace.exe`. No compiler, CMake, Ninja, or source checkout is required.
+FlowSpace maintains persistent AI context documentation under `.ai/` so a fresh coding session can understand the project without prior conversation history. Start with [`AGENTS.md`](AGENTS.md).
 
-The release package contains the application, required runtime dependencies, the project
-license, and third-party license information. The installer adds Start Menu and optional
-desktop shortcuts. FlowSpace starts in the system tray;
-configuration and logs are stored under `%LOCALAPPDATA%\FlowSpace\`.
+| File | Purpose |
+|------|---------|
+| `AGENTS.md` | Primary instructions for AI coding agents (read first) |
+| `.ai/ARCHITECTURE.md` | Module responsibilities, Windows APIs, data flow |
+| `.ai/CONFIGURATION.md` | `config.json` schema reference |
+| `.ai/TESTING.md` | Manual integration test checklist |
 
-To uninstall the installer version, exit FlowSpace and use **Installed apps** in Windows
-Settings or **Uninstall FlowSpace** from the Start Menu. The portable ZIP can be removed by
-exiting FlowSpace and deleting the folder where you extracted it. To remove personal settings
-and logs as well, delete
-`%LOCALAPPDATA%\FlowSpace\`. If FlowSpace startup was enabled, disable it first in Settings
-or remove its Startup entry from Windows Settings. See [UNINSTALL.md](UNINSTALL.md) for
-details.
+See [`AGENTS.md`](AGENTS.md) for the mandatory agent workflow.
 
-## Build
+---
 
-Source builds are intended for contributors and developers:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build.ps1            # Debug
-powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -BuildType Release
-# Custom MSYS2 installation:
-powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -MingwBin C:\tools\ucrt64\bin
-```
-
-Or with CMake directly (MinGW bin on PATH):
-
-```powershell
-cmake -S . -B build/cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build build/cmake                      # all targets
-cmake --build build/cmake --target flowspace   # just the app
-```
-
-Outputs into `build/cmake/`:
-
-| Target | Purpose |
-|---|---|
-| `flowspace.exe` | The app (GUI subsystem, tray icon, hidden message window) |
-| `flowspace-diag.exe` | Read-only diagnostic CLI: monitors + manageable windows report |
-| `flowspace_tests.exe` | Core-logic test suite (137 checks) |
-
-A static `libstdc++`/`libgcc` link (`-static`) means the exe runs without MinGW runtime DLLs.
-The automated release workflow builds and tests an x64 package. It also checks the
-executable's imports and includes any required MinGW runtime DLLs in the package.
-Tagged releases use the protected `release-signing` GitHub Environment for packaging.
-Configure that environment with required reviewers and tag-only deployment rules before
-running release builds.
-
-### Icon
-
-`build/flowspace.ico` is generated by `scripts/make-icon.ps1` (pure .NET System.Drawing) and
-embedded via `packaging/app.rc` (windres) together with VERSIONINFO. The PerMonitorV2 DPI
-manifest is set at runtime in `main.cpp` instead of the resource file — MinGW's linker
-auto-links a default manifest object, and a second manifest fails to merge.
-
-## Run
-
-`build\cmake\flowspace.exe` — starts hidden in the tray. Data lives in
-`%LOCALAPPDATA%\FlowSpace\` (`config.json`, `config.backup.json`, `journal.json`,
-`logs\flowspace.log`).
-
-Stop it gracefully from the tray menu (Exit), or:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\stop.ps1   # posts WM_CLOSE to the message window
-```
-
-Default hotkeys: `Ctrl+Alt+Left/Right` switch workspace, `Ctrl+Alt+1..9` jump,
-`Ctrl+Alt+Shift+Left/Right` move active window, `Ctrl+Alt+Space` switcher, `Ctrl+Alt+F12`
-reveal all, `Ctrl+Alt+O` settings.
-
-## Tests
-
-```powershell
-& build\cmake\flowspace_tests.exe
-```
-
-Covers StringUtils (utf8/wide round trips, hex colors), ConfigService (defaults, save/load,
-corruption recovery, v0→v1 migration, normalization), RecoveryManager (journal round trip,
-corrupt-journal fail-safe), WorkspaceManager (CRUD, monitor reconciliation, adjacency,
-window assignment) and HotkeyManager (parsing, naming, conflict detection).
-
-See `docs/TESTING.md` for the manual integration checklist (live run, crash recovery,
-display-change, wallpaper restore).
-
-## Project layout
-
-```
-src/
-  app/main.cpp               app entry: single-instance, COM, PMv2, message loop, wiring
-  app/diagnostic_main.cpp    Phase-1 diagnostic CLI (flowspace-diag)
-  core/                      Models.h, ConfigService, RecoveryManager, StringUtils,
-                             WorkspaceManager (domain logic, persistence, journal)
-  platform/                  MonitorManager, WindowManager, ProcessInfo, WallpaperManager,
-                             HotkeyManager, StartupManager, WinEventHook (Win32/COM)
-  engine/WorkspaceEngine     orchestrates switching: hide/show, wallpaper, hotkey actions
-  ui/                        Theme, SwitcherVisual, SwitchNotification, SwitcherPopup, TrayIcon, MainWindow
-tests/test_core.cpp          self-contained test harness (no external framework)
-packaging/                   app.rc (icon + version), app.manifest (reference)
-docs/                        ARCHITECTURE.md, CONFIGURATION.md, TESTING.md
-scripts/                     build.ps1, compile-check.ps1, make-icon.ps1, stop.ps1
-.github/workflows/release.yml automated x64 Windows release build
-packaging/FlowSpace.iss      Inno Setup installer definition
-THIRD-PARTY-NOTICES.txt      bundled dependency license summary
-UNINSTALL.md                 uninstall instructions for installer and portable releases
-```
-
-## Known limitations
-
-- The project supports x64 Windows builds using the MSYS2 UCRT64 toolchain.
-- Single-threaded design: everything runs on the main message-loop thread (deliberate).
-- Hotkey conflict UI surfaces conflicts in Settings; registration is all-or-nothing per combo.
+*FlowSpace is an independent per-monitor workspace manager for Windows 10/11. Built with native C++ (MinGW). Source builds require MinGW-w64 UCRT64, CMake, and Ninja — see the build section in [`AGENTS.md`](AGENTS.md) if you want to compile from source.*

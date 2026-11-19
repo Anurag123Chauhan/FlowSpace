@@ -1,9 +1,8 @@
 # FlowSpace manual test checklist
 
-Automated suite: `build\cmake\flowspace_tests.exe` (137 checks, core logic).
-Everything below is the live checklist, validated on a 2-monitor machine
-(1920×1080 primary + 1440×900 secondary) — re-run after touching the engine,
-window management, wallpaper or shutdown paths.
+Automated suite: `build\cmake\flowspace_tests.exe` (core-logic checks, no external framework).
+Everything below is the live checklist — re-run after touching the engine, window management,
+wallpaper, or shutdown paths.
 
 Before you start: note your current desktop wallpaper (Personalization → Background)
 so you can verify restore-on-exit.
@@ -12,7 +11,7 @@ so you can verify restore-on-exit.
 
 - [ ] `build\cmake\flowspace.exe` — no error box, app appears in tray (blue icon).
 - [ ] Log `%LOCALAPPDATA%\FlowSpace\logs\flowspace.log` shows:
-  `IDesktopWallpaper COM object created`, `Captured original wallpaper state for 2 monitor(s)`,
+  `IDesktopWallpaper COM object created`, `Captured original wallpaper state for ... monitor(s)`,
   `WinEvent hooks installed`, `FlowSpace started.` — and **no** hotkey warnings.
 - [ ] Second instance: running `flowspace.exe` again shows "FlowSpace is already running."
 
@@ -71,8 +70,8 @@ so you can verify restore-on-exit.
 
 ## 8. Settings UI
 
-- [ ] Tray → Settings opens `FlowSpace Settings`; all pages render (Workspaces, Appearance,
-      Wallpaper, Hotkeys, Windows, Advanced).
+- [ ] Tray → Settings opens `FlowSpace Settings`; all pages render:
+  Overview, Workspaces, Monitors, Shortcuts, Behavior, App Rules, Recovery, About.
 - [ ] Create / rename / recolor / reorder / duplicate / delete a workspace; tray menu and
       switcher reflect changes immediately.
 - [ ] Toggle pause (tray): switching disabled; toggling again re-enables.
