@@ -13,7 +13,7 @@ Documented from actual source code. No invented abstractions.
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ ui      SwitcherVisual · SwitchNotification · SwitcherPopup · TrayIcon │  Win32/GDI
-│         MainWindow · Theme                                              │
+│         MainWindow · Theme · DesignSystem                              │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ engine  WorkspaceEngine   (orchestration, UI callbacks)                │
 ├──────────────────────────────────┬──────────────────────────────────────┤
@@ -35,7 +35,7 @@ Source layout:
 - `src/core/` — Models.h, ConfigService, RecoveryManager, StringUtils, WorkspaceManager
 - `src/engine/` — WorkspaceEngine
 - `src/platform/` — MonitorManager, WindowManager, ProcessInfo, WallpaperManager, HotkeyManager, StartupManager, WinEventHook
-- `src/ui/` — Theme, SwitcherVisual, SwitchNotification, SwitcherPopup, TrayIcon, MainWindow
+- `src/ui/` — Theme, DesignSystem, SwitcherVisual, SwitchNotification, SwitcherPopup, TrayIcon, MainWindow
 
 ## Threading model
 
@@ -125,8 +125,14 @@ Source layout:
 - Callbacks: `OnOverlayShow(workspace, monitorStableId)`, `OnStateChanged()`.
 
 ### `ui/MainWindow` — settings window
-- Frameless dark custom-drawn UI, 8 pages (Overview, Workspaces, Monitors, Shortcuts, Behavior, App Rules, Recovery, About). Hit-tested hotspots (no child controls). Never appears in engine window tracking (owned by FlowSpace process).
+- Settings shell: fixed 208 px (96 DPI) sidebar (drawn brand mark, product name, 8 navigation items with icons + selected indicator, running status, version), flexible content area with a fixed per-page header (title + description) and a scrollable body.
+- 8 pages (Overview, Workspaces, Monitors, Shortcuts, Behavior, App Rules, Recovery, About), all custom-drawn via `Draw`/`Components` primitives. Hit-tested hotspots (no child controls). Never appears in engine window tracking (owned by FlowSpace process).
 - `Context` holds engine/config/recovery/monitors/wallpaper/startup + `onConfigSaved`.
+- Theme: always follows the Windows app light/dark preference (`AppTheme::ThemeMode::System`), resolved from `AppsUseLightTheme` and re-applied on `WM_SETTINGCHANGE`. The native title bar is matched through `DwmSetWindowAttribute` (immersive dark mode + caption colour).
+- Pages switch instantly (no cross-fade) to avoid layout jitter; the whole window is painted into an offscreen bitmap (`WM_ERASEBKGND` returns 1) so resizing and page switches never flicker.
+- Pages taller than the viewport scroll with the mouse wheel; content is clipped to the viewport and a thin scrollbar is drawn.
+- Workspace rows expose a single three-dot menu (rename, wallpaper, accent, duplicate, reset, delete) instead of a row of cryptic icon buttons.
+- Per-monitor DPI aware (`WM_DPICHANGED`), minimum track size enforced via `WM_GETMINMAXINFO`.
 
 ### `ui/SwitcherPopup` — `Ctrl+Alt+Space` selector
 - Layered, per-pixel-alpha translucent panel centered on target monitor. Paginated (9 rows/page). Digits 1–9 select directly. `UpdateLayeredWindow` for flicker-free presentation.
@@ -175,7 +181,7 @@ Both vendored in-tree. No package manager required.
 Four static libraries + two executables + one test executable:
 
 1. `flowspace_core` (STATIC) — `src/core/*.cpp` — domain logic, persistence, recovery journal. No Win32 UI deps.
-2. `flowspace_platform` (STATIC) — `src/platform/*.cpp` — Win32 API + COM interop. Links `flowspace_core` + system libs (user32, gdi32, shell32, advapi32, ole32, oleaut32, comdlg32, comctl32, msimg32, uuid, dwmapi, shcore, uxtheme).
+2. `flowspace_platform` (STATIC) — `src/platform/*.cpp` — Win32 API + COM interop. Links `flowspace_core` + system libs (user32, gdi32, shell32, advapi32, ole32, oleaut32, comdlg32, comctl32, msimg32, uuid, dwmapi, shcore, uxtheme, gdiplus).
 3. `flowspace_engine` (STATIC) — `src/engine/WorkspaceEngine.cpp` — orchestration. Links `flowspace_core` + `flowspace_platform`.
 4. `flowspace_ui` (STATIC) — `src/ui/*.cpp` — switcher, notification, tray, settings. Links `flowspace_core` + `flowspace_platform` + `flowspace_engine`.
 5. `flowspace` (EXE, WIN32) — `src/app/main.cpp` + `packaging/app.rc` — the app. Links all four libs. `-municode` → `wWinMain`. Icon embedded via `app.rc` (windres).
@@ -225,6 +231,16 @@ Compile definitions: `UNICODE`, `_UNICODE`, `_WIN32_WINNT=0x0A00`, `NTDDI_VERSIO
 - `flowspace::ui::SwitchNotification` — `src/ui/SwitchNotification.h/.cpp`
 - `flowspace::ui::TrayIcon` — `src/ui/TrayIcon.h/.cpp`
 - `flowspace::ui::Theme` / `flowspace::ui::visual` — `src/ui/Theme.{h,cpp}`, `src/ui/SwitcherVisual.{h,cpp}`
+- `flowspace::ui::AppTheme` + `flowspace::ui::Draw` / `flowspace::ui::Components` — `src/ui/DesignSystem.{h,cpp}`: theme tokens (light/dark/system), DPI-scaled fonts/spacing, drawing primitives and reusable components (card, button, toggle, badge, divider, brand mark, empty state).
+- `flowspace::ui::MainWindow` — `src/ui/MainWindow.h/.cpp`: settings shell with fixed sidebar, eight content pages, instant page switching, wheel scrolling, system-following theme and hit-tested interactions.
+
+### `ui/DesignSystem` — design tokens and reusable components
+- `AppTheme` — runtime theme state (mode, DPI scale, resolved `ThemeTokens`, lazy fonts). Supports Light and Dark; the settings window runs in System mode and resolves the Windows `AppsUseLightTheme` preference (with a `WM_SETTINGCHANGE` refresh). DPI scale comes from `GetDpiForWindow`.
+- `ThemeTokens` — dark and light palettes per the design spec (bg, sidebar, surface, elevated, border, text, accent, semantic colors, workspace accent presets).
+- `Draw` — primitives: fill, rect, line, text, icon glyph, text measurement. `Draw::RoundRect` is rendered through GDI+ with anti-aliasing so card, button and toggle edges stay smooth; GDI+ is started once per process and `gdiplus` is linked into `flowspace`.
+- `Components` — stateless reusable controls: card, brand mark, divider, button, icon button, toggle, badge, section header, empty state. All support both themes.
+- Spacing scale 4/8/12/16/20/24/32 px, DPI scaled.
+- `scripts/make-icon.ps1` generates a multi-size `build/flowspace.ico` (16–256 px, 32-bit DIB + PNG) embedded by `packaging/app.rc`; the window class uses resource ID 1 for the title bar, taskbar and Alt+Tab icons.
 - `AppContext` (anonymous namespace) — `src/app/main.cpp`
 
 ## Related documentation
