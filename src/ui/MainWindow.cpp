@@ -596,7 +596,7 @@ namespace flowspace::ui
         Draw::Text(dc, paused ? L"Paused" : L"Running",
                    {nav.left + px(30), nav.bottom - px(44), nav.right - px(16), nav.bottom - px(28)},
                    theme_.SmallFont(), paused ? t.warning : t.success, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-        Draw::Text(dc, L"v0.1.0", {nav.left + px(16), nav.bottom - px(26), nav.right - px(16), nav.bottom - px(10)},
+        Draw::Text(dc, L"v1.0.0", {nav.left + px(16), nav.bottom - px(26), nav.right - px(16), nav.bottom - px(10)},
                    theme_.SmallFont(), t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     }
 
@@ -1442,7 +1442,7 @@ namespace flowspace::ui
         Components::BrandMark(dc, tile, theme_);
         Draw::Text(dc, L"FlowSpace", {tile.right + px(14), card.top + px(22), card.right - px(24), card.top + px(46)},
                    theme_.HeadingFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
-        Draw::Text(dc, L"Version 0.1.0  \u00B7  Native Win32  \u00B7  x64",
+        Draw::Text(dc, L"Version 1.0.0  \u00B7  Native Win32  \u00B7  x64",
                    {tile.right + px(14), card.top + px(46), card.right - px(24), card.top + px(64)}, theme_.SmallFont(),
                    t.textDim, DT_LEFT | DT_TOP | DT_SINGLELINE);
 

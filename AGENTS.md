@@ -10,7 +10,7 @@ FlowSpace is an independent per-monitor workspace manager for Windows 10/11. Eac
 
 - **Purpose:** Per-monitor independent virtual workspaces for Windows. Hiding/showing windows is journaled to disk so windows are never lost, even after a crash.
 - **Language:** Native C++ (C++23), compiled with MinGW-w64 UCRT64 (g++). No C#, no .NET, no Electron — deliberate native Windows implementation.
-- **Version:** 0.1.0
+- **Version:** 1.0.0
 - **Platform:** Windows 10 (1903+) / Windows 11, x64. No admin rights required.
 - **Data location:** `%LOCALAPPDATA%\FlowSpace\` (`config.json`, `config.backup.json`, `journal.json`, `logs\flowspace.log`).
 

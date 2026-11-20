@@ -7,11 +7,11 @@
 #endif
 
 #ifndef AppVersion
-  #define AppVersion "0.1.0"
+  #define AppVersion "1.0.0"
 #endif
 
 #ifndef OutputBaseFilename
-  #define OutputBaseFilename "FlowSpace-0.1.0-windows-x64-setup"
+  #define OutputBaseFilename "FlowSpace-1.0.0-windows-x64-setup"
 #endif
 
 [Setup]
