@@ -58,6 +58,49 @@ Open Settings (`Ctrl+Alt+O` or tray → Open Settings) to:
 - **App Rules** — automatically send specific apps (e.g. notepad.exe) to a workspace
 - **Recovery** — view and restore hidden windows from the journal
 
+### App rules
+
+App rules send matching applications to a workspace automatically.
+
+**Add a rule in Settings:**
+
+1. Focus a window of the app you want to assign (for example, Notepad).
+2. Press `Ctrl+Alt+O` and open **App Rules**.
+3. Click **+ Add rule**.
+
+FlowSpace captures the `.exe` name of the app you were using before Settings opened, and targets the workspace that was active on the monitor where that app was. The rule is saved immediately. In the App Rules list you can toggle a rule on/off or delete it.
+
+**Advanced conditions (edit `config.json`):**
+
+The Settings page only shows the executable, target workspace, and on/off state. To narrow a rule by full path or window title, exit FlowSpace from the tray first (it rewrites the config on changes), then edit the `appRules` array in `%LOCALAPPDATA%\FlowSpace\config.json` and start FlowSpace again:
+
+```jsonc
+"appRules": [
+  {
+    "id": "rule-1",
+    "enabled": true,
+    "exeName": "notepad.exe",       // exact file name, case-insensitive
+    "exePath": "",                  // optional full path, case-insensitive
+    "titleContains": "Draft",       // optional title substring, case-sensitive
+    "targetWorkspaceId": "ws-1",    // workspace id from the "workspaces" array
+    "monitorPreference": 0,         // 0 = any, 1 = follow workspace, 2 = specific monitor
+    "monitorStableId": "",          // used only when monitorPreference is 2
+    "launchCommand": ""             // reserved; currently unused
+  }
+]
+```
+
+Prefer **+ Add rule** when you need a `monitorStableId` — it captures the long display identifier for you, and hand-written values are easy to get wrong.
+
+**How matching works:**
+
+- Rules are checked in order; the first enabled match wins, and its target workspace must belong to the monitor the window appeared on.
+- At least one of `exeName`, `exePath`, or `titleContains` must be set; a rule with all three empty matches nothing.
+- `exeName`/`exePath` are exact, case-insensitive comparisons. `titleContains` is a case-sensitive substring match.
+- `monitorPreference: 2` restricts the rule to one display; `1` moves the window to a monitor whose active workspace is the target; `0` leaves monitor placement alone.
+- If no rule matches, FlowSpace groups windows by application, then falls back to the monitor's active workspace.
+- Rules affect **new** windows. Adding a rule does not move windows that are already open — restart FlowSpace to apply rules to them. That startup pass switches the target monitor to the rule's workspace so the window becomes visible.
+
 ## Features
 
 - **Per-monitor workspaces** — each monitor has its own active workspace and switch history. Nothing on monitor B changes when monitor A switches.
