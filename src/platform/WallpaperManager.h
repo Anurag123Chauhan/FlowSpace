@@ -22,22 +22,16 @@ namespace flowspace::platform
     struct CapturedWallpaper
     {
         std::wstring monitorDevicePath;
-        std::wstring imagePath;      // empty = solid background color only
+        std::wstring imagePath; // empty = solid background color only
         COLORREF backgroundColor = RGB(0, 0, 0);
         WallpaperPosition position = WallpaperPosition::Fill;
     };
 
-    /// <summary>
-    /// Per-monitor wallpaper management through the documented IDesktopWallpaper COM interface
-    /// (Windows 8+). Never uses undocumented virtual-desktop interfaces or registry hacks.
-    ///
-    /// Interop note (verified against ShObjIdl.idl from the Windows 10 SDK, include/um):
-    ///   IID_IDesktopWallpaper  {B92B56A9-8B55-4E14-9A89-0199BBB6F93B}
-    ///   CLSID_DesktopWallpaper {C2CF3110-460E-4fc1-B9D0-8A1C0C9CC4BD}
-    /// </summary>
+    /// Manages wallpapers per monitor through Windows' documented wallpaper API.
+    /// Each change targets one monitor so other displays are not affected.
     class WallpaperManager
     {
-    public:
+      public:
         WallpaperManager();
         ~WallpaperManager();
 
@@ -85,7 +79,7 @@ namespace flowspace::platform
         // True when the monitor is attached according to GetMonitorRECT (S_FALSE = detached).
         bool IsMonitorAttached(const std::wstring &monitorDevicePath);
 
-    private:
+      private:
         // Raw COM interface, declared in vtable order exactly as in ShObjIdl.idl.
         struct IDesktopWallpaperImpl : public IUnknown
         {

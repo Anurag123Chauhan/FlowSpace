@@ -119,7 +119,9 @@ namespace flowspace::ui
 
             const RECT card{state.margin, state.margin, state.margin + state.cardW, state.margin + state.cardH};
             const COLORREF panel = Theme::Sidebar;
-            const uint32_t opaque = 0xFF000000u | (static_cast<uint32_t>(GetBValue(panel)) << 16) | (static_cast<uint32_t>(GetGValue(panel)) << 8) | static_cast<uint32_t>(GetRValue(panel));
+            const uint32_t opaque = 0xFF000000u | (static_cast<uint32_t>(GetBValue(panel)) << 16) |
+                                    (static_cast<uint32_t>(GetGValue(panel)) << 8) |
+                                    static_cast<uint32_t>(GetRValue(panel));
             for (int y = card.top; y < card.bottom; ++y)
             {
                 uint32_t *row = pixels + static_cast<size_t>(y) * state.width + card.left;
@@ -137,7 +139,8 @@ namespace flowspace::ui
             visual::DrawMonitorIcon(dc, card.left + Scaled(20, s), centerY - Scaled(13, s), iconSize, accent, s);
 
             // Vertical separator.
-            RECT separator{card.left + Scaled(64, s), card.top + Scaled(18, s), card.left + Scaled(65, s), card.bottom - Scaled(18, s)};
+            RECT separator{card.left + Scaled(64, s), card.top + Scaled(18, s), card.left + Scaled(65, s),
+                           card.bottom - Scaled(18, s)};
             HBRUSH sepBrush = CreateSolidBrush(Theme::Border);
             FillRect(dc, &separator, sepBrush);
             DeleteObject(sepBrush);
@@ -149,7 +152,8 @@ namespace flowspace::ui
             HGDIOBJ oldFont = SelectObject(dc, nameFont);
             SetTextColor(dc, Theme::Text);
             RECT nameRect{textLeft, card.top + Scaled(13, s), textRight, card.top + Scaled(44, s)};
-            DrawTextW(dc, core::Utf8ToWide(state.workspace.name).c_str(), -1, &nameRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+            DrawTextW(dc, core::Utf8ToWide(state.workspace.name).c_str(), -1, &nameRect,
+                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
             SelectObject(dc, oldFont);
             DeleteObject(nameFont);
 
@@ -184,7 +188,8 @@ namespace flowspace::ui
             DeleteObject(checkPen);
 
             GdiFlush();
-            visual::ApplyCardAlpha(pixels, state.width, state.height, card, Scaled(14, s), state.margin, 240, s, Theme::Border);
+            visual::ApplyCardAlpha(pixels, state.width, state.height, card, Scaled(14, s), state.margin, 240, s,
+                                   Theme::Border);
         }
 
         void PresentFrame(HWND hwnd, const NotificationState &state, double alpha, double zoom)
@@ -198,7 +203,8 @@ namespace flowspace::ui
             POINT dst{state.x + (state.width - w) / 2, state.y + (state.height - h) / 2};
             POINT src{0, 0};
             SIZE size{w, h};
-            BLENDFUNCTION blend{AC_SRC_OVER, 0, static_cast<BYTE>(std::clamp(alpha, 0.0, 1.0) * 255.0 + 0.5), AC_SRC_ALPHA};
+            BLENDFUNCTION blend{AC_SRC_OVER, 0, static_cast<BYTE>(std::clamp(alpha, 0.0, 1.0) * 255.0 + 0.5),
+                                AC_SRC_ALPHA};
             UpdateLayeredWindow(hwnd, nullptr, &dst, &size, state.memDc, &src, 0, &blend, ULW_ALPHA);
         }
 
@@ -246,38 +252,38 @@ namespace flowspace::ui
             auto *state = reinterpret_cast<NotificationState *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
             switch (msg)
             {
-            case WM_CREATE:
-            {
-                auto *create = reinterpret_cast<CREATESTRUCTW *>(lParam);
-                state = static_cast<NotificationState *>(create->lpCreateParams);
-                SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(state));
-                RenderCard(*state);
-                state->startTick = GetTickCount64();
-                Animate(hwnd, *state, 0);
-                // The timer is installed by Show() once the window exists, so a failure
-                // can be handled without destroying the window inside WM_CREATE.
-                return 0;
-            }
-            case WM_TIMER:
-            {
-                if (state)
+                case WM_CREATE:
                 {
-                    Animate(hwnd, *state, static_cast<int>(GetTickCount64() - state->startTick));
+                    auto *create = reinterpret_cast<CREATESTRUCTW *>(lParam);
+                    state = static_cast<NotificationState *>(create->lpCreateParams);
+                    SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(state));
+                    RenderCard(*state);
+                    state->startTick = GetTickCount64();
+                    Animate(hwnd, *state, 0);
+                    // The timer is installed by Show() once the window exists, so a failure
+                    // can be handled without destroying the window inside WM_CREATE.
+                    return 0;
                 }
-                return 0;
-            }
-            case WM_DESTROY:
-            {
-                KillTimer(hwnd, kTimerId);
-                if (state)
+                case WM_TIMER:
                 {
-                    DestroyBitmap(*state);
-                    LiveNotifications().erase(state->monitorId);
-                    delete state;
+                    if (state)
+                    {
+                        Animate(hwnd, *state, static_cast<int>(GetTickCount64() - state->startTick));
+                    }
+                    return 0;
                 }
-                SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-                return 0;
-            }
+                case WM_DESTROY:
+                {
+                    KillTimer(hwnd, kTimerId);
+                    if (state)
+                    {
+                        DestroyBitmap(*state);
+                        LiveNotifications().erase(state->monitorId);
+                        delete state;
+                    }
+                    SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
+                    return 0;
+                }
             }
             return DefWindowProcW(hwnd, msg, wParam, lParam);
         }
@@ -293,7 +299,9 @@ namespace flowspace::ui
         RegisterClassW(&wc);
     }
 
-    void SwitchNotification::Show(HINSTANCE instance, const core::MonitorInfo &monitor, const core::Workspace &workspace, int workspaceNumber, const std::string &animationStyle, int animationMs)
+    void SwitchNotification::Show(HINSTANCE instance, const core::MonitorInfo &monitor,
+                                  const core::Workspace &workspace, int workspaceNumber,
+                                  const std::string &animationStyle, int animationMs)
     {
         auto *state = new NotificationState();
         state->workspace = workspace;
@@ -325,8 +333,10 @@ namespace flowspace::ui
         }
         live[state->monitorId] = nullptr;
 
-        constexpr DWORD exStyle = WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT;
-        HWND hwnd = CreateWindowExW(exStyle, kClassName, L"", WS_POPUP, state->x, state->y, state->width, state->height, nullptr, nullptr, instance, state);
+        constexpr DWORD exStyle =
+            WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT;
+        HWND hwnd = CreateWindowExW(exStyle, kClassName, L"", WS_POPUP, state->x, state->y, state->width, state->height,
+                                    nullptr, nullptr, instance, state);
         if (!hwnd)
         {
             live.erase(state->monitorId);

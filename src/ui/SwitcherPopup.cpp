@@ -116,8 +116,7 @@ namespace flowspace::ui
 
         RECT CardRect(const PopupState &state)
         {
-            return RECT{state.margin, state.margin,
-                        state.margin + state.cardW, state.margin + state.cardH};
+            return RECT{state.margin, state.margin, state.margin + state.cardW, state.margin + state.cardH};
         }
 
         RECT FooterRect(const PopupState &state)
@@ -206,7 +205,8 @@ namespace flowspace::ui
 
             HFONT font = Theme::CreateUiFont(9, false, true, scale);
             HGDIOBJ oldFont = SelectObject(dc, font);
-            SetTextColor(dc, enabled ? (hovered ? Theme::Text : Theme::TextDim) : visual::Tint(Theme::Sidebar, Theme::TextDim, 0.25));
+            SetTextColor(dc, enabled ? (hovered ? Theme::Text : Theme::TextDim)
+                                     : visual::Tint(Theme::Sidebar, Theme::TextDim, 0.25));
             RECT textRect = rect;
             DrawTextW(dc, text, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
             SelectObject(dc, oldFont);
@@ -245,7 +245,9 @@ namespace flowspace::ui
 
             const RECT card = CardRect(state);
             const COLORREF panel = Theme::Sidebar;
-            const uint32_t opaque = 0xFF000000u | (static_cast<uint32_t>(GetBValue(panel)) << 16) | (static_cast<uint32_t>(GetGValue(panel)) << 8) | static_cast<uint32_t>(GetRValue(panel));
+            const uint32_t opaque = 0xFF000000u | (static_cast<uint32_t>(GetBValue(panel)) << 16) |
+                                    (static_cast<uint32_t>(GetGValue(panel)) << 8) |
+                                    static_cast<uint32_t>(GetRValue(panel));
             for (int y = card.top; y < card.bottom; ++y)
             {
                 uint32_t *row = pixels + static_cast<size_t>(y) * state.width + card.left;
@@ -276,9 +278,8 @@ namespace flowspace::ui
                     HBRUSH brush = CreateSolidBrush(bg);
                     HGDIOBJ oldBrush = SelectObject(dc, brush);
                     HGDIOBJ oldPen = SelectObject(dc, GetStockObject(NULL_PEN));
-                    RoundRect(dc, card.left + Scaled(4, s), rowTop + Scaled(2, s),
-                              card.right - Scaled(4, s), rowBottom - Scaled(2, s),
-                              Scaled(8, s), Scaled(8, s));
+                    RoundRect(dc, card.left + Scaled(4, s), rowTop + Scaled(2, s), card.right - Scaled(4, s),
+                              rowBottom - Scaled(2, s), Scaled(8, s), Scaled(8, s));
                     SelectObject(dc, oldPen);
                     SelectObject(dc, oldBrush);
                     DeleteObject(brush);
@@ -287,8 +288,8 @@ namespace flowspace::ui
                 // Subtle active indicator on the left edge of the row.
                 if (active)
                 {
-                    RECT bar{card.left + Scaled(8, s), rowTop + Scaled(11, s),
-                             card.left + Scaled(11, s), rowBottom - Scaled(11, s)};
+                    RECT bar{card.left + Scaled(8, s), rowTop + Scaled(11, s), card.left + Scaled(11, s),
+                             rowBottom - Scaled(11, s)};
                     HBRUSH barBrush = CreateSolidBrush(accent);
                     FillRect(dc, &bar, barBrush);
                     DeleteObject(barBrush);
@@ -297,9 +298,7 @@ namespace flowspace::ui
                 const int iconLeft = card.left + Scaled(16, s);
                 const int iconSize = Scaled(24, s);
                 const int iconTop = rowTop + (state.rowH - iconSize) / 2;
-                const COLORREF iconColor = (active || hovered)
-                                               ? accent
-                                               : visual::Tint(Theme::TextDim, accent, 0.45);
+                const COLORREF iconColor = (active || hovered) ? accent : visual::Tint(Theme::TextDim, accent, 0.45);
                 visual::DrawMonitorIcon(dc, iconLeft, iconTop, iconSize, iconColor, s);
 
                 const int nameLeft = iconLeft + iconSize + Scaled(10, s);
@@ -317,11 +316,9 @@ namespace flowspace::ui
                 HFONT numFont = Theme::CreateUiFont(9, false, true, s);
                 HGDIOBJ oldNumFont = SelectObject(dc, numFont);
                 SetTextColor(dc, active ? accent : Theme::TextDim);
-                RECT numRect{nameRight + Scaled(4, s), rowTop,
-                             card.right - Scaled(14, s), rowBottom};
+                RECT numRect{nameRight + Scaled(4, s), rowTop, card.right - Scaled(14, s), rowBottom};
                 const std::wstring number = std::to_wstring(index + 1);
-                DrawTextW(dc, number.c_str(), -1, &numRect,
-                          DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
+                DrawTextW(dc, number.c_str(), -1, &numRect, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
                 SelectObject(dc, oldNumFont);
                 DeleteObject(numFont);
             }
@@ -338,7 +335,8 @@ namespace flowspace::ui
                 FooterButtons(state, prev, next);
                 const int pages = PageCount(state);
                 DrawFooterButton(dc, prev, L"‹ Prev", state.page > 0, state.hoveredFooter == FooterHover::Prev, s);
-                DrawFooterButton(dc, next, L"Next ›", state.page + 1 < pages, state.hoveredFooter == FooterHover::Next, s);
+                DrawFooterButton(dc, next, L"Next ›", state.page + 1 < pages, state.hoveredFooter == FooterHover::Next,
+                                 s);
 
                 HFONT labelFont = Theme::CreateUiFont(8, false, false, s);
                 HGDIOBJ oldLabelFont = SelectObject(dc, labelFont);
@@ -351,7 +349,8 @@ namespace flowspace::ui
             }
 
             GdiFlush();
-            visual::ApplyCardAlpha(pixels, state.width, state.height, card, Scaled(12, s), state.margin, 242, s, Theme::Border);
+            visual::ApplyCardAlpha(pixels, state.width, state.height, card, Scaled(12, s), state.margin, 242, s,
+                                   Theme::Border);
         }
 
         void Present(HWND hwnd, const PopupState &state)
@@ -378,161 +377,160 @@ namespace flowspace::ui
             auto *state = reinterpret_cast<PopupState *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
             switch (msg)
             {
-            case WM_CREATE:
-            {
-                auto *create = reinterpret_cast<CREATESTRUCTW *>(lParam);
-                state = static_cast<PopupState *>(create->lpCreateParams);
-                SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(state));
+                case WM_CREATE:
+                {
+                    auto *create = reinterpret_cast<CREATESTRUCTW *>(lParam);
+                    state = static_cast<PopupState *>(create->lpCreateParams);
+                    SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(state));
 
-                // Open on the page containing the active workspace and highlight it.
-                for (size_t i = 0; i < state->items.size(); ++i)
-                {
-                    if (state->items[i].active)
-                    {
-                        const int activeIndex = static_cast<int>(i);
-                        SetPage(*state, activeIndex / state->rowsPerPage);
-                        state->hovered = activeIndex;
-                        break;
-                    }
-                }
-                Refresh(hwnd, *state);
-                return 0;
-            }
-            case WM_MOUSEMOVE:
-            {
-                const HitTarget hit = HitTest(*state, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-                int newHovered = -1;
-                FooterHover newFooter = FooterHover::None;
-                if (hit.kind == HitKind::Row)
-                {
-                    newHovered = hit.index;
-                }
-                else if (hit.kind == HitKind::PrevPage)
-                {
-                    newFooter = FooterHover::Prev;
-                }
-                else if (hit.kind == HitKind::NextPage)
-                {
-                    newFooter = FooterHover::Next;
-                }
-                if (newHovered != state->hovered || newFooter != state->hoveredFooter)
-                {
-                    state->hovered = newHovered;
-                    state->hoveredFooter = newFooter;
-                    Refresh(hwnd, *state);
-                }
-                return 0;
-            }
-            case WM_LBUTTONUP:
-            {
-                const HitTarget hit = HitTest(*state, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-                if (hit.kind == HitKind::Row)
-                {
-                    state->result = hit.index + 1;
-                    PostMessageW(hwnd, kDoneMessage, static_cast<WPARAM>(state->result), 0);
-                }
-                else if (hit.kind == HitKind::PrevPage || hit.kind == HitKind::NextPage)
-                {
-                    const int delta = hit.kind == HitKind::PrevPage ? -1 : 1;
-                    SetPage(*state, state->page + delta);
-                    state->hovered = state->pageStart;
-                    state->hoveredFooter = FooterHover::None;
-                    Refresh(hwnd, *state);
-                }
-                return 0;
-            }
-            case WM_KEYDOWN:
-            {
-                if (wParam == VK_ESCAPE)
-                {
-                    PostMessageW(hwnd, kDoneMessage, 0, 0);
-                    return 0;
-                }
-                if (wParam >= '1' && wParam <= '9')
-                {
-                    const int n = static_cast<int>(wParam - '0');
+                    // Open on the page containing the active workspace and highlight it.
                     for (size_t i = 0; i < state->items.size(); ++i)
                     {
-                        if (state->items[i].number == n)
+                        if (state->items[i].active)
                         {
-                            state->result = static_cast<int>(i) + 1;
-                            PostMessageW(hwnd, kDoneMessage, static_cast<WPARAM>(state->result), 0);
+                            const int activeIndex = static_cast<int>(i);
+                            SetPage(*state, activeIndex / state->rowsPerPage);
+                            state->hovered = activeIndex;
                             break;
                         }
                     }
+                    Refresh(hwnd, *state);
                     return 0;
                 }
-                if (wParam == VK_UP || wParam == VK_DOWN)
+                case WM_MOUSEMOVE:
                 {
-                    const int delta = wParam == VK_UP ? -1 : 1;
-                    const int pageEnd = state->pageStart + state->visibleRows;
-                    int next = state->hovered;
-                    if (next < state->pageStart || next >= pageEnd)
+                    const HitTarget hit = HitTest(*state, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+                    int newHovered = -1;
+                    FooterHover newFooter = FooterHover::None;
+                    if (hit.kind == HitKind::Row)
                     {
-                        next = delta > 0 ? state->pageStart : pageEnd - 1;
+                        newHovered = hit.index;
                     }
-                    else
+                    else if (hit.kind == HitKind::PrevPage)
                     {
-                        next += delta;
+                        newFooter = FooterHover::Prev;
                     }
+                    else if (hit.kind == HitKind::NextPage)
+                    {
+                        newFooter = FooterHover::Next;
+                    }
+                    if (newHovered != state->hovered || newFooter != state->hoveredFooter)
+                    {
+                        state->hovered = newHovered;
+                        state->hoveredFooter = newFooter;
+                        Refresh(hwnd, *state);
+                    }
+                    return 0;
+                }
+                case WM_LBUTTONUP:
+                {
+                    const HitTarget hit = HitTest(*state, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+                    if (hit.kind == HitKind::Row)
+                    {
+                        state->result = hit.index + 1;
+                        PostMessageW(hwnd, kDoneMessage, static_cast<WPARAM>(state->result), 0);
+                    }
+                    else if (hit.kind == HitKind::PrevPage || hit.kind == HitKind::NextPage)
+                    {
+                        const int delta = hit.kind == HitKind::PrevPage ? -1 : 1;
+                        SetPage(*state, state->page + delta);
+                        state->hovered = state->pageStart;
+                        state->hoveredFooter = FooterHover::None;
+                        Refresh(hwnd, *state);
+                    }
+                    return 0;
+                }
+                case WM_KEYDOWN:
+                {
+                    if (wParam == VK_ESCAPE)
+                    {
+                        PostMessageW(hwnd, kDoneMessage, 0, 0);
+                        return 0;
+                    }
+                    if (wParam >= '1' && wParam <= '9')
+                    {
+                        const int n = static_cast<int>(wParam - '0');
+                        for (size_t i = 0; i < state->items.size(); ++i)
+                        {
+                            if (state->items[i].number == n)
+                            {
+                                state->result = static_cast<int>(i) + 1;
+                                PostMessageW(hwnd, kDoneMessage, static_cast<WPARAM>(state->result), 0);
+                                break;
+                            }
+                        }
+                        return 0;
+                    }
+                    if (wParam == VK_UP || wParam == VK_DOWN)
+                    {
+                        const int delta = wParam == VK_UP ? -1 : 1;
+                        const int pageEnd = state->pageStart + state->visibleRows;
+                        int next = state->hovered;
+                        if (next < state->pageStart || next >= pageEnd)
+                        {
+                            next = delta > 0 ? state->pageStart : pageEnd - 1;
+                        }
+                        else
+                        {
+                            next += delta;
+                        }
 
-                    // Cross into the adjacent page at the list boundary.
-                    if (next < state->pageStart && state->page > 0)
-                    {
-                        SetPage(*state, state->page - 1);
-                        next = state->pageStart + state->visibleRows - 1;
+                        // Cross into the adjacent page at the list boundary.
+                        if (next < state->pageStart && state->page > 0)
+                        {
+                            SetPage(*state, state->page - 1);
+                            next = state->pageStart + state->visibleRows - 1;
+                        }
+                        else if (next >= pageEnd && state->page + 1 < PageCount(*state))
+                        {
+                            SetPage(*state, state->page + 1);
+                            next = state->pageStart;
+                        }
+                        next = std::clamp(next, state->pageStart, state->pageStart + state->visibleRows - 1);
+                        if (next != state->hovered)
+                        {
+                            state->hovered = next;
+                            state->hoveredFooter = FooterHover::None;
+                            Refresh(hwnd, *state);
+                        }
+                        return 0;
                     }
-                    else if (next >= pageEnd && state->page + 1 < PageCount(*state))
+                    if (wParam == VK_PRIOR || wParam == VK_NEXT || wParam == VK_LEFT || wParam == VK_RIGHT)
                     {
-                        SetPage(*state, state->page + 1);
-                        next = state->pageStart;
+                        const int delta = (wParam == VK_PRIOR || wParam == VK_LEFT) ? -1 : 1;
+                        const int target = state->page + delta;
+                        if (target >= 0 && target < PageCount(*state))
+                        {
+                            SetPage(*state, target);
+                            state->hovered = delta > 0 ? state->pageStart : state->pageStart + state->visibleRows - 1;
+                            state->hoveredFooter = FooterHover::None;
+                            Refresh(hwnd, *state);
+                        }
+                        return 0;
                     }
-                    next = std::clamp(next, state->pageStart, state->pageStart + state->visibleRows - 1);
-                    if (next != state->hovered)
+                    if (wParam == VK_RETURN && state->hovered >= 0)
                     {
-                        state->hovered = next;
-                        state->hoveredFooter = FooterHover::None;
-                        Refresh(hwnd, *state);
+                        state->result = state->hovered + 1;
+                        PostMessageW(hwnd, kDoneMessage, static_cast<WPARAM>(state->result), 0);
+                        return 0;
                     }
                     return 0;
                 }
-                if (wParam == VK_PRIOR || wParam == VK_NEXT ||
-                    wParam == VK_LEFT || wParam == VK_RIGHT)
+                case WM_ACTIVATE:
                 {
-                    const int delta = (wParam == VK_PRIOR || wParam == VK_LEFT) ? -1 : 1;
-                    const int target = state->page + delta;
-                    if (target >= 0 && target < PageCount(*state))
+                    if (LOWORD(wParam) == WA_INACTIVE)
                     {
-                        SetPage(*state, target);
-                        state->hovered = delta > 0 ? state->pageStart : state->pageStart + state->visibleRows - 1;
-                        state->hoveredFooter = FooterHover::None;
-                        Refresh(hwnd, *state);
+                        PostMessageW(hwnd, kDoneMessage, 0, 0); // clicking elsewhere dismisses
                     }
                     return 0;
                 }
-                if (wParam == VK_RETURN && state->hovered >= 0)
+                case WM_DESTROY:
                 {
-                    state->result = state->hovered + 1;
-                    PostMessageW(hwnd, kDoneMessage, static_cast<WPARAM>(state->result), 0);
+                    DestroyBitmap(*state);
+                    delete state;
+                    SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
                     return 0;
                 }
-                return 0;
-            }
-            case WM_ACTIVATE:
-            {
-                if (LOWORD(wParam) == WA_INACTIVE)
-                {
-                    PostMessageW(hwnd, kDoneMessage, 0, 0); // clicking elsewhere dismisses
-                }
-                return 0;
-            }
-            case WM_DESTROY:
-            {
-                DestroyBitmap(*state);
-                delete state;
-                SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
-                return 0;
-            }
             }
             return DefWindowProcW(hwnd, msg, wParam, lParam);
         }
@@ -561,9 +559,8 @@ namespace flowspace::ui
         // Layered + per-pixel alpha gives rounded corners, translucency and a soft shadow
         // without a custom frame. The popup stays activatable so keyboard input works.
         constexpr DWORD exStyle = WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
-        HWND hwnd = CreateWindowExW(exStyle, kClassName, L"FlowSpace Switcher", WS_POPUP,
-                                    state->x, state->y, state->width, state->height,
-                                    nullptr, nullptr, instance, state);
+        HWND hwnd = CreateWindowExW(exStyle, kClassName, L"FlowSpace Switcher", WS_POPUP, state->x, state->y,
+                                    state->width, state->height, nullptr, nullptr, instance, state);
         if (!hwnd)
         {
             delete state;

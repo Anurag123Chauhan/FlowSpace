@@ -43,8 +43,7 @@ namespace flowspace::platform
         using UniqueHandle = std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleCloser>;
     } // namespace
 
-    WindowManager::WindowManager(const IMonitorManager &monitorManager)
-        : monitorManager_(monitorManager)
+    WindowManager::WindowManager(const IMonitorManager &monitorManager) : monitorManager_(monitorManager)
     {
     }
 
@@ -76,10 +75,10 @@ namespace flowspace::platform
 
         if (pid != 0)
         {
-            (void)flowspace::platform::ProcessInfo::QueryDetails(pid, info.executablePath, info.executableName, info.processCreationTime);
+            (void)flowspace::platform::ProcessInfo::QueryDetails(pid, info.executablePath, info.executableName,
+                                                                 info.processCreationTime);
         }
 
-        // Determine the granular visibility state
         DWORD cloakReason = 0;
         if (IsWindowCloaked(hwnd, &cloakReason))
         {
@@ -302,8 +301,6 @@ namespace flowspace::platform
         return {};
     }
 
-    // --- Visibility control ---
-
     bool WindowManager::CaptureRestoreState(HWND hwnd, WindowRestoreState &outState) const
     {
         outState = WindowRestoreState{};
@@ -334,7 +331,8 @@ namespace flowspace::platform
         return true;
     }
 
-    bool WindowManager::HideWindowFast(HWND hwnd, const WindowRestoreState &state, core::WindowVisibilityState *outNewState)
+    bool WindowManager::HideWindowFast(HWND hwnd, const WindowRestoreState &state,
+                                       core::WindowVisibilityState *outNewState)
     {
         if (!IsWindow(hwnd))
         {
@@ -348,7 +346,8 @@ namespace flowspace::platform
         }
         if (!ok)
         {
-            spdlog::debug("ShowWindowAsync(SW_HIDE) returned FALSE for HWND=0x{:08X}", reinterpret_cast<uintptr_t>(hwnd));
+            spdlog::debug("ShowWindowAsync(SW_HIDE) returned FALSE for HWND=0x{:08X}",
+                          reinterpret_cast<uintptr_t>(hwnd));
         }
         return ok != FALSE;
     }
@@ -367,7 +366,8 @@ namespace flowspace::platform
         return ok != FALSE;
     }
 
-    bool WindowManager::ShowWindowFast(HWND hwnd, const WindowRestoreState &state, core::WindowVisibilityState *outNewState)
+    bool WindowManager::ShowWindowFast(HWND hwnd, const WindowRestoreState &state,
+                                       core::WindowVisibilityState *outNewState)
     {
         if (!IsWindow(hwnd))
         {
@@ -378,9 +378,8 @@ namespace flowspace::platform
         // that state instead of popping it open.
         const bool minimizedNow = IsIconic(hwnd) != FALSE;
         const bool restoreMinimized = state.wasMinimized || minimizedNow;
-        const UINT showCmd = restoreMinimized
-                                 ? SW_SHOWMINNOACTIVE
-                                 : (state.wasMaximized ? SW_SHOWMAXIMIZED : SW_SHOWNOACTIVATE);
+        const UINT showCmd =
+            restoreMinimized ? SW_SHOWMINNOACTIVE : (state.wasMaximized ? SW_SHOWMAXIMIZED : SW_SHOWNOACTIVATE);
 
         WINDOWPLACEMENT placement{};
         placement.length = sizeof(placement);
@@ -404,10 +403,9 @@ namespace flowspace::platform
         const BOOL ok = ShowWindowAsync(hwnd, showCmd);
         if (outNewState)
         {
-            *outNewState = restoreMinimized
-                               ? core::WindowVisibilityState::Minimized
-                               : (state.wasMaximized ? core::WindowVisibilityState::Maximized
-                                                     : core::WindowVisibilityState::Visible);
+            *outNewState = restoreMinimized ? core::WindowVisibilityState::Minimized
+                                            : (state.wasMaximized ? core::WindowVisibilityState::Maximized
+                                                                  : core::WindowVisibilityState::Visible);
         }
         return ok != FALSE;
     }
@@ -449,7 +447,8 @@ namespace flowspace::platform
         {
             return TRUE;
         }
-        if (context->point.x < rect.left || context->point.x >= rect.right || context->point.y < rect.top || context->point.y >= rect.bottom)
+        if (context->point.x < rect.left || context->point.x >= rect.right || context->point.y < rect.top ||
+            context->point.y >= rect.bottom)
         {
             return TRUE;
         }
@@ -511,7 +510,8 @@ namespace flowspace::platform
                             SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER) != FALSE;
     }
 
-    bool WindowManager::IsWindowFromProcess(HWND hwnd, DWORD pid, const std::wstring &exePath, uint64_t creationTime) const
+    bool WindowManager::IsWindowFromProcess(HWND hwnd, DWORD pid, const std::wstring &exePath,
+                                            uint64_t creationTime) const
     {
         if (!IsWindow(hwnd))
         {

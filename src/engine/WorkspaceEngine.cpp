@@ -15,20 +15,21 @@ namespace flowspace::engine
     {
         bool IsEffectivelyVisible(const core::WindowVisibilityState state)
         {
-            return state == core::WindowVisibilityState::Visible || state == core::WindowVisibilityState::Maximized || state == core::WindowVisibilityState::Minimized;
+            return state == core::WindowVisibilityState::Visible || state == core::WindowVisibilityState::Maximized ||
+                   state == core::WindowVisibilityState::Minimized;
         }
 
-        std::string Narrow(const std::wstring &w) { return core::WideToUtf8(w); }
+        std::string Narrow(const std::wstring &w)
+        {
+            return core::WideToUtf8(w);
+        }
     }
 
-    WorkspaceEngine::WorkspaceEngine(platform::MonitorManager &monitors,
-                                     platform::WindowManager &windows,
-                                     core::WorkspaceManager &workspaces,
-                                     core::ConfigService &config,
-                                     core::RecoveryManager &recovery,
-                                     platform::HotkeyManager &hotkeys)
-        : monitors_(monitors), windows_(windows), workspaces_(workspaces), config_(config),
-          recovery_(recovery), hotkeys_(hotkeys)
+    WorkspaceEngine::WorkspaceEngine(platform::MonitorManager &monitors, platform::WindowManager &windows,
+                                     core::WorkspaceManager &workspaces, core::ConfigService &config,
+                                     core::RecoveryManager &recovery, platform::HotkeyManager &hotkeys)
+        : monitors_(monitors), windows_(windows), workspaces_(workspaces), config_(config), recovery_(recovery),
+          hotkeys_(hotkeys)
     {
     }
 
@@ -93,7 +94,8 @@ namespace flowspace::engine
                 recovery_.Forget(entry.hwnd);
                 continue;
             }
-            if (!windows_.IsWindowFromProcess(entry.hwnd, entry.processId, entry.executablePath, entry.processCreationTime))
+            if (!windows_.IsWindowFromProcess(entry.hwnd, entry.processId, entry.executablePath,
+                                              entry.processCreationTime))
             {
                 // HWND reused by a different process — never act on it.
                 spdlog::warn("Recovery: HWND 0x{:08X} no longer belongs to expected process {}; dropping",
@@ -139,8 +141,8 @@ namespace flowspace::engine
         }
 
         // Discover all currently manageable windows and sync them into the tracker.
-        const auto discovered = windows_.DiscoverWindows(
-            platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
+        const auto discovered =
+            windows_.DiscoverWindows(platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
         workspaces_.SyncDiscoveredWindows(discovered);
 
         const auto tracked = workspaces_.GetTrackedWindows();
@@ -164,7 +166,6 @@ namespace flowspace::engine
                 continue;
             }
 
-            // Already on the correct workspace — nothing to do.
             if (win.assignedWorkspaceId == assignment)
             {
                 continue;
@@ -176,9 +177,8 @@ namespace flowspace::engine
                 continue;
             }
 
-            const std::wstring targetMonitor = targetWs->monitorStableId.empty()
-                                                   ? win.monitorStableId
-                                                   : targetWs->monitorStableId;
+            const std::wstring targetMonitor =
+                targetWs->monitorStableId.empty() ? win.monitorStableId : targetWs->monitorStableId;
 
             // If the rule has a Specific monitor preference, use that monitor.
             std::wstring finalMonitor = targetMonitor;
@@ -198,8 +198,7 @@ namespace flowspace::engine
             if (finalMonitor != win.monitorStableId)
             {
                 spdlog::info("Rule startup: moving HWND=0x{:08X} ('{}') to monitor '{}'",
-                             reinterpret_cast<uintptr_t>(win.hwnd),
-                             std::string(win.title.begin(), win.title.end()),
+                             reinterpret_cast<uintptr_t>(win.hwnd), std::string(win.title.begin(), win.title.end()),
                              Narrow(finalMonitor));
                 windows_.MoveWindowToMonitor(win.hwnd, finalMonitor);
             }
@@ -243,7 +242,6 @@ namespace flowspace::engine
                 return *mon;
             }
         }
-        // Primary fallback.
         for (const auto &mon : monitors_.EnumerateMonitors())
         {
             if (mon.isPrimary)
@@ -255,12 +253,12 @@ namespace flowspace::engine
         return all.empty() ? std::wstring{} : all.front().stableId;
     }
 
-    std::string WorkspaceEngine::ResolveAdjacentWorkspace(const std::wstring &monitorStableId, SwitchDirection direction) const
+    std::string WorkspaceEngine::ResolveAdjacentWorkspace(const std::wstring &monitorStableId,
+                                                          SwitchDirection direction) const
     {
         const auto resolved = workspaces_.ResolveAdjacentWorkspaceId(
-            monitorStableId, direction == SwitchDirection::Next
-                                 ? core::WorkspaceSwitchDirection::Next
-                                 : core::WorkspaceSwitchDirection::Previous);
+            monitorStableId, direction == SwitchDirection::Next ? core::WorkspaceSwitchDirection::Next
+                                                                : core::WorkspaceSwitchDirection::Previous);
         return resolved.value_or(std::string{});
     }
 
@@ -275,8 +273,8 @@ namespace flowspace::engine
                 return false;
             }
             const auto monitors = workspaces_.GetMonitors();
-            return std::any_of(monitors.begin(), monitors.end(), [&](const core::MonitorInfo &mon)
-                               { return mon.stableId == stableId; });
+            return std::any_of(monitors.begin(), monitors.end(),
+                               [&](const core::MonitorInfo &mon) { return mon.stableId == stableId; });
         };
 
         if (isKnown(window.monitorStableId))
@@ -289,12 +287,12 @@ namespace flowspace::engine
         {
             if (isKnown(*cursorId))
             {
-                spdlog::debug("Move: window monitor '{}' unavailable; using cursor monitor '{}'", Narrow(window.monitorStableId), Narrow(*cursorId));
+                spdlog::debug("Move: window monitor '{}' unavailable; using cursor monitor '{}'",
+                              Narrow(window.monitorStableId), Narrow(*cursorId));
                 return *cursorId;
             }
         }
 
-        // Last resort: ResolveActionMonitor() falls back primary -> first monitor.
         const auto fallback = ResolveActionMonitor();
         spdlog::warn("Move: window and cursor monitors unavailable; using '{}'", Narrow(fallback));
         return fallback;
@@ -307,13 +305,15 @@ namespace flowspace::engine
         // "last active"), so only use it if nothing manageable is under the pointer.
         if (auto underCursor = windows_.GetWindowUnderCursor(); underCursor.hwnd != nullptr)
         {
-            spdlog::debug("Move: using window under cursor (HWND=0x{:08X}, '{}')", reinterpret_cast<uintptr_t>(underCursor.hwnd), Narrow(underCursor.title));
+            spdlog::debug("Move: using window under cursor (HWND=0x{:08X}, '{}')",
+                          reinterpret_cast<uintptr_t>(underCursor.hwnd), Narrow(underCursor.title));
             return underCursor;
         }
         return windows_.GetForegroundWindow();
     }
 
-    SwitchResult WorkspaceEngine::SwitchMonitorToWorkspace(const std::wstring &monitorStableId, const std::string &workspaceId)
+    SwitchResult WorkspaceEngine::SwitchMonitorToWorkspace(const std::wstring &monitorStableId,
+                                                           const std::string &workspaceId)
     {
         SwitchResult result;
         result.monitorStableId = monitorStableId;
@@ -335,8 +335,8 @@ namespace flowspace::engine
         if (!ws->monitorStableId.empty() && ws->monitorStableId != monitorStableId)
         {
             result.error = "workspace belongs to another monitor";
-            spdlog::warn("Switch rejected: workspace '{}' does not belong to monitor '{}'",
-                         workspaceId, Narrow(monitorStableId));
+            spdlog::warn("Switch rejected: workspace '{}' does not belong to monitor '{}'", workspaceId,
+                         Narrow(monitorStableId));
             return result;
         }
 
@@ -383,7 +383,8 @@ namespace flowspace::engine
         return SwitchMonitorToWorkspace(monitorStableId, all[static_cast<size_t>(numberOneBased - 1)].id);
     }
 
-    bool WorkspaceEngine::ApplySwitch(const std::wstring &monitorStableId, const std::string &workspaceId, SwitchResult &result)
+    bool WorkspaceEngine::ApplySwitch(const std::wstring &monitorStableId, const std::string &workspaceId,
+                                      SwitchResult &result)
     {
         switchInProgress_ = true;
         struct Reset
@@ -396,13 +397,12 @@ namespace flowspace::engine
         const auto activeId = workspaces_.GetActiveWorkspaceId(monitorStableId);
         (void)activeId;
 
-        // 1. Discover manageable windows and sync them into the tracker.
-        //    Unknown windows get assigned to the ACTIVE workspace of the monitor they are on,
-        //    so switching away from that workspace hides them.
-        const auto discovered = windows_.DiscoverWindows(platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
+        // Discover windows and assign untracked ones to their monitor's active workspace.
+        const auto discovered =
+            windows_.DiscoverWindows(platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
         workspaces_.SyncDiscoveredWindows(discovered);
 
-        // 2. Drop stale hidden-window entries whose HWNDs are gone (missed DESTROY events).
+        // Remove tracker entries for windows that no longer exist.
         for (const auto &tracked : workspaces_.GetTrackedWindows())
         {
             if (tracked.visibilityState == core::WindowVisibilityState::HiddenByFlowSpace && !IsWindow(tracked.hwnd))
@@ -414,8 +414,7 @@ namespace flowspace::engine
 
         const bool paused = config_.Get().settings.paused;
 
-        // 3. Hide/show windows that live on this monitor. Windows on other monitors are never
-        //    touched here — switching one display must not disturb another.
+        // Only change windows on this monitor; other displays remain untouched.
         for (const auto &tracked : workspaces_.GetTrackedWindows())
         {
             if (tracked.monitorStableId != monitorStableId)
@@ -429,7 +428,6 @@ namespace flowspace::engine
 
             if (tracked.assignedWorkspaceId == workspaceId)
             {
-                // Belongs to the destination workspace: show it (if hidden by us).
                 if (tracked.visibilityState == core::WindowVisibilityState::HiddenByFlowSpace)
                 {
                     if (paused || !IsWindow(tracked.hwnd))
@@ -452,19 +450,17 @@ namespace flowspace::engine
                 continue;
             }
 
-            // Belongs to another workspace: hide it while the monitor shows the destination.
             if (tracked.visibilityState == core::WindowVisibilityState::HiddenByFlowSpace)
             {
-                continue; // already hidden
+                continue;
             }
             if (!IsEffectivelyVisible(tracked.visibilityState))
             {
-                continue; // cloaked/system-hidden: never ours to manage
+                continue;
             }
             if (tracked.visibilityState == core::WindowVisibilityState::Minimized)
             {
-                // Leave minimized windows alone: they occupy no screen area and hiding them
-                // would remove their taskbar buttons, increasing the chance of "lost" windows.
+                // Keep minimized windows visible in the taskbar so users can still find them.
                 continue;
             }
             if (paused)
@@ -475,17 +471,16 @@ namespace flowspace::engine
             ++result.windowsHidden;
         }
 
-        // 4. Update active workspace state (per monitor — other monitors unaffected).
+        // Save the new active workspace for this monitor.
         workspaces_.SetActiveWorkspace(monitorStableId, workspaceId);
         config_.Get().monitorState[monitorStableId] = workspaceId;
 
-        // 5. Overlay.
         if (OnOverlayShow && ws.has_value())
         {
             OnOverlayShow(*ws, monitorStableId);
         }
 
-        // 7. Persist monitor state (windows themselves are runtime state, never persisted).
+        // Save workspace settings; window visibility is runtime state.
         PersistWorkspacesToConfig();
         config_.Save();
         if (OnStateChanged)
@@ -493,8 +488,8 @@ namespace flowspace::engine
             OnStateChanged();
         }
 
-        spdlog::info("Switch: monitor '{}' -> '{}' (hidden={}, shown={}, errors={})",
-                     Narrow(monitorStableId), workspaceId, result.windowsHidden, result.windowsShown, result.windowErrors);
+        spdlog::info("Switch: monitor '{}' -> '{}' (hidden={}, shown={}, errors={})", Narrow(monitorStableId),
+                     workspaceId, result.windowsHidden, result.windowsShown, result.windowErrors);
         return true;
     }
 
@@ -503,12 +498,13 @@ namespace flowspace::engine
         platform::WindowRestoreState state;
         if (!windows_.CaptureRestoreState(window.hwnd, state))
         {
-            spdlog::warn("Switch: window vanished before hide (HWND=0x{:08X})", reinterpret_cast<uintptr_t>(window.hwnd));
+            spdlog::warn("Switch: window vanished before hide (HWND=0x{:08X})",
+                         reinterpret_cast<uintptr_t>(window.hwnd));
             workspaces_.ForgetWindow(window.hwnd);
             return;
         }
 
-        // Journal BEFORE hiding so a crash between the two leaves a restorable record.
+        // Save the recovery record before hiding, so a crash cannot lose the window.
         recovery_.RecordHide(window, workspaceId, state.wasMinimized, state.wasMaximized, state.restoreRect);
 
         core::WindowVisibilityState newState;
@@ -531,8 +527,8 @@ namespace flowspace::engine
         {
             // Do not leave a journal entry pointing at a window that never actually hid.
             recovery_.RecordShow(window.hwnd);
-            spdlog::warn("Switch: failed to hide HWND=0x{:08X} ('{}')",
-                         reinterpret_cast<uintptr_t>(window.hwnd), Narrow(window.title));
+            spdlog::warn("Switch: failed to hide HWND=0x{:08X} ('{}')", reinterpret_cast<uintptr_t>(window.hwnd),
+                         Narrow(window.title));
             return;
         }
         workspaces_.SetWindowState(window.hwnd, newState);
@@ -557,11 +553,16 @@ namespace flowspace::engine
         }
         else
         {
-            workspaces_.SetWindowState(hwnd, state.wasMinimized ? core::WindowVisibilityState::Minimized : (state.wasMaximized ? core::WindowVisibilityState::Maximized : core::WindowVisibilityState::Visible));
+            workspaces_.SetWindowState(hwnd, state.wasMinimized
+                                                 ? core::WindowVisibilityState::Minimized
+                                                 : (state.wasMaximized ? core::WindowVisibilityState::Maximized
+                                                                       : core::WindowVisibilityState::Visible));
         }
     }
 
-    bool WorkspaceEngine::MoveActiveWindowToWorkspace(const std::string &workspaceId, const std::wstring &monitorStableId, const core::WindowInfo *window)
+    bool WorkspaceEngine::MoveActiveWindowToWorkspace(const std::string &workspaceId,
+                                                      const std::wstring &monitorStableId,
+                                                      const core::WindowInfo *window)
     {
         const auto fg = window ? *window : ResolveMoveWindow();
         if (fg.hwnd == nullptr)
@@ -574,29 +575,29 @@ namespace flowspace::engine
             return false;
         }
 
-        // The tracker is populated on switches, not at startup. A window can therefore be
-        // perfectly manageable but unknown to WorkspaceManager when a move hotkey fires.
-        // Sync it first, otherwise AssignWindowToWorkspace() fails silently and the window
-        // gets hidden with no workspace assignment to ever restore it from.
+        // Add this window to the tracker before assigning it to a workspace.
+        // Otherwise a move could hide a window that FlowSpace cannot restore.
         workspaces_.SyncDiscoveredWindows({fg});
 
         const auto targetMonitor = monitorStableId.empty() ? fg.monitorStableId : monitorStableId;
         if (!targetWorkspace->monitorStableId.empty() && targetWorkspace->monitorStableId != targetMonitor)
         {
-            spdlog::warn("Move: workspace '{}' belongs to monitor '{}', not '{}'",
-                         workspaceId, Narrow(targetWorkspace->monitorStableId), Narrow(targetMonitor));
+            spdlog::warn("Move: workspace '{}' belongs to monitor '{}', not '{}'", workspaceId,
+                         Narrow(targetWorkspace->monitorStableId), Narrow(targetMonitor));
             return false;
         }
         if (!workspaces_.AssignWindowToWorkspace(fg.hwnd, workspaceId, targetMonitor))
         {
-            spdlog::warn("Move: refused to hide HWND=0x{:08X} ('{}'); window is not tracked", reinterpret_cast<uintptr_t>(fg.hwnd), Narrow(fg.title));
+            spdlog::warn("Move: refused to hide HWND=0x{:08X} ('{}'); window is not tracked",
+                         reinterpret_cast<uintptr_t>(fg.hwnd), Narrow(fg.title));
             return false;
         }
 
         // Assign the window, then hide it: it belongs to the target workspace now, and the
         // current monitor is showing a different one. The application keeps running.
         HideWindowInternal(fg, workspaceId);
-        spdlog::info("Move: HWND=0x{:08X} ('{}') -> '{}' on monitor '{}'", reinterpret_cast<uintptr_t>(fg.hwnd), Narrow(fg.title), workspaceId, Narrow(targetMonitor));
+        spdlog::info("Move: HWND=0x{:08X} ('{}') -> '{}' on monitor '{}'", reinterpret_cast<uintptr_t>(fg.hwnd),
+                     Narrow(fg.title), workspaceId, Narrow(targetMonitor));
         if (OnStateChanged)
         {
             OnStateChanged();
@@ -658,9 +659,11 @@ namespace flowspace::engine
                 continue;
             }
             // Validate identity: an HWND can be reused by another process after a crash.
-            if (!windows_.IsWindowFromProcess(entry.hwnd, entry.processId, entry.executablePath, entry.processCreationTime))
+            if (!windows_.IsWindowFromProcess(entry.hwnd, entry.processId, entry.executablePath,
+                                              entry.processCreationTime))
             {
-                spdlog::warn("Reveal: HWND 0x{:08X} identity mismatch; skipping", reinterpret_cast<uintptr_t>(entry.hwnd));
+                spdlog::warn("Reveal: HWND 0x{:08X} identity mismatch; skipping",
+                             reinterpret_cast<uintptr_t>(entry.hwnd));
                 ++cleaned;
                 recovery_.Forget(entry.hwnd);
                 continue;
@@ -674,8 +677,10 @@ namespace flowspace::engine
                 if (windows_.ShowWindowFast(entry.hwnd, state))
                 {
                     ++revealed;
-                    workspaces_.SetWindowState(entry.hwnd, state.wasMinimized ? core::WindowVisibilityState::Minimized
-                                                                              : (state.wasMaximized ? core::WindowVisibilityState::Maximized : core::WindowVisibilityState::Visible));
+                    workspaces_.SetWindowState(
+                        entry.hwnd, state.wasMinimized ? core::WindowVisibilityState::Minimized
+                                                       : (state.wasMaximized ? core::WindowVisibilityState::Maximized
+                                                                             : core::WindowVisibilityState::Visible));
                 }
             }
             recovery_.Forget(entry.hwnd);
@@ -754,7 +759,8 @@ namespace flowspace::engine
         return true;
     }
 
-    std::string WorkspaceEngine::ResolveAssignmentForNewWindow(const core::WindowInfo &window, const core::AppRule **matchedRule) const
+    std::string WorkspaceEngine::ResolveAssignmentForNewWindow(const core::WindowInfo &window,
+                                                               const core::AppRule **matchedRule) const
     {
         if (matchedRule)
         {
@@ -795,8 +801,7 @@ namespace flowspace::engine
         {
             for (const auto &tracked : workspaces_.GetTrackedWindows())
             {
-                if (tracked.hwnd != window.hwnd &&
-                    tracked.monitorStableId == monitorId &&
+                if (tracked.hwnd != window.hwnd && tracked.monitorStableId == monitorId &&
                     _wcsicmp(tracked.executableName.c_str(), window.executableName.c_str()) == 0 &&
                     validTarget(tracked.assignedWorkspaceId))
                 {
@@ -824,7 +829,8 @@ namespace flowspace::engine
 
     void WorkspaceEngine::ProcessNewWindow(HWND hwnd)
     {
-        const auto discovered = windows_.DiscoverWindows(platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
+        const auto discovered =
+            windows_.DiscoverWindows(platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
         // Track first; AssignWindowToWorkspace() is a no-op for unknown HWNDs.
         workspaces_.SyncDiscoveredWindows(discovered);
         for (const auto &window : discovered)
@@ -842,7 +848,8 @@ namespace flowspace::engine
             workspaces_.AssignWindowToWorkspace(hwnd, assignment, window.monitorStableId);
 
             // Monitor preference: relocate the window when the rule asks for it.
-            if (rule != nullptr && rule->monitorPreference == core::MonitorPreference::Specific && !rule->monitorStableId.empty() && rule->monitorStableId != window.monitorStableId)
+            if (rule != nullptr && rule->monitorPreference == core::MonitorPreference::Specific &&
+                !rule->monitorStableId.empty() && rule->monitorStableId != window.monitorStableId)
             {
                 windows_.MoveWindowToMonitor(hwnd, rule->monitorStableId);
             }
@@ -868,7 +875,8 @@ namespace flowspace::engine
         {
             return; // switches manage visibility themselves
         }
-        const auto discovered = windows_.DiscoverWindows(platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
+        const auto discovered =
+            windows_.DiscoverWindows(platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
         for (const auto &window : discovered)
         {
             if (window.hwnd != hwnd)
@@ -896,7 +904,8 @@ namespace flowspace::engine
 
     void WorkspaceEngine::ProcessMovedWindow(HWND hwnd)
     {
-        const auto discovered = windows_.DiscoverWindows(platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
+        const auto discovered =
+            windows_.DiscoverWindows(platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
         for (const auto &window : discovered)
         {
             if (window.hwnd != hwnd)
@@ -946,42 +955,42 @@ namespace flowspace::engine
 
         switch (type)
         {
-        case WindowEventType::Created:
-            ProcessNewWindow(hwnd);
-            break;
-        case WindowEventType::Shown:
-            ProcessShownWindow(hwnd);
-            break;
-        case WindowEventType::Destroyed:
-            workspaces_.ForgetWindow(hwnd);
-            recovery_.Forget(hwnd);
-            if (OnStateChanged)
-            {
-                OnStateChanged();
-            }
-            break;
-        case WindowEventType::MoveSizeEnd:
-            ProcessMovedWindow(hwnd);
-            break;
-        case WindowEventType::Hidden:
-            // Nothing to do: hidden windows remain hidden.
-            break;
-        case WindowEventType::Foreground:
-            // Track the last focused manageable window so "+ Add rule" can capture it
-            // even though clicking the button makes FlowSpace Settings the foreground window.
-            {
-                const auto discovered = windows_.DiscoverWindows(
-                    platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
-                for (const auto &win : discovered)
+            case WindowEventType::Created:
+                ProcessNewWindow(hwnd);
+                break;
+            case WindowEventType::Shown:
+                ProcessShownWindow(hwnd);
+                break;
+            case WindowEventType::Destroyed:
+                workspaces_.ForgetWindow(hwnd);
+                recovery_.Forget(hwnd);
+                if (OnStateChanged)
                 {
-                    if (win.hwnd == hwnd)
+                    OnStateChanged();
+                }
+                break;
+            case WindowEventType::MoveSizeEnd:
+                ProcessMovedWindow(hwnd);
+                break;
+            case WindowEventType::Hidden:
+                // Nothing to do: hidden windows remain hidden.
+                break;
+            case WindowEventType::Foreground:
+                // Track the last focused manageable window so "+ Add rule" can capture it
+                // even though clicking the button makes FlowSpace Settings the foreground window.
+                {
+                    const auto discovered = windows_.DiscoverWindows(
+                        platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
+                    for (const auto &win : discovered)
                     {
-                        lastFocusedWindowInfo_ = win;
-                        break;
+                        if (win.hwnd == hwnd)
+                        {
+                            lastFocusedWindowInfo_ = win;
+                            break;
+                        }
                     }
                 }
-            }
-            break;
+                break;
         }
     }
 
@@ -1001,36 +1010,34 @@ namespace flowspace::engine
 
         switch (action)
         {
-        case core::HotkeyAction::PreviousWorkspace:
-            SwitchRelative(monitor, SwitchDirection::Previous);
-            break;
-        case core::HotkeyAction::NextWorkspace:
-            SwitchRelative(monitor, SwitchDirection::Next);
-            break;
-        case core::HotkeyAction::SwitchToWorkspaceByNumber:
-            SwitchByNumber(monitor, number);
-            break;
-        case core::HotkeyAction::MoveActiveWindowToPreviousWorkspace:
-            MoveActiveWindowRelative(SwitchDirection::Previous);
-            break;
-        case core::HotkeyAction::MoveActiveWindowToNextWorkspace:
-            MoveActiveWindowRelative(SwitchDirection::Next);
-            break;
-        case core::HotkeyAction::MoveActiveWindowToWorkspaceByNumber:
-            MoveActiveWindowByNumber(number);
-            break;
-        case core::HotkeyAction::RevealAllWindows:
-            RevealAllWindows();
-            break;
-        case core::HotkeyAction::OpenWorkspaceSwitcher:
-        case core::HotkeyAction::OpenSettings:
-            // The app registers its own handlers for these UI actions.
-            return false;
+            case core::HotkeyAction::PreviousWorkspace:
+                SwitchRelative(monitor, SwitchDirection::Previous);
+                break;
+            case core::HotkeyAction::NextWorkspace:
+                SwitchRelative(monitor, SwitchDirection::Next);
+                break;
+            case core::HotkeyAction::SwitchToWorkspaceByNumber:
+                SwitchByNumber(monitor, number);
+                break;
+            case core::HotkeyAction::MoveActiveWindowToPreviousWorkspace:
+                MoveActiveWindowRelative(SwitchDirection::Previous);
+                break;
+            case core::HotkeyAction::MoveActiveWindowToNextWorkspace:
+                MoveActiveWindowRelative(SwitchDirection::Next);
+                break;
+            case core::HotkeyAction::MoveActiveWindowToWorkspaceByNumber:
+                MoveActiveWindowByNumber(number);
+                break;
+            case core::HotkeyAction::RevealAllWindows:
+                RevealAllWindows();
+                break;
+            case core::HotkeyAction::OpenWorkspaceSwitcher:
+            case core::HotkeyAction::OpenSettings:
+                // The app registers its own handlers for these UI actions.
+                return false;
         }
         return true;
     }
-
-    // --- UI facade ---------------------------------------------------------------
 
     std::vector<core::Workspace> WorkspaceEngine::GetWorkspaces() const
     {
@@ -1107,10 +1114,10 @@ namespace flowspace::engine
     void WorkspaceEngine::CaptureForegroundWindowInfo()
     {
         lastFocusedWindowInfo_ = windows_.GetForegroundWindow();
-        spdlog::info("Captured foreground for rule: hwnd=0x{:08X} exe='{}'",
-                     reinterpret_cast<uintptr_t>(lastFocusedWindowInfo_->hwnd),
-                     std::string(lastFocusedWindowInfo_->executableName.begin(),
-                                 lastFocusedWindowInfo_->executableName.end()));
+        spdlog::info(
+            "Captured foreground for rule: hwnd=0x{:08X} exe='{}'",
+            reinterpret_cast<uintptr_t>(lastFocusedWindowInfo_->hwnd),
+            std::string(lastFocusedWindowInfo_->executableName.begin(), lastFocusedWindowInfo_->executableName.end()));
     }
 
     std::string WorkspaceEngine::CreateWorkspace(const std::string &name, const std::wstring &monitorStableId)
@@ -1229,7 +1236,8 @@ namespace flowspace::engine
             {
                 continue;
             }
-            if (!IsWindow(hwnd) || !windows_.IsWindowFromProcess(hwnd, entry.processId, entry.executablePath, entry.processCreationTime))
+            if (!IsWindow(hwnd) ||
+                !windows_.IsWindowFromProcess(hwnd, entry.processId, entry.executablePath, entry.processCreationTime))
             {
                 recovery_.Forget(hwnd);
                 return;
@@ -1240,8 +1248,10 @@ namespace flowspace::engine
             state.restoreRect = entry.restoreRect;
             if (windows_.ShowWindowFast(hwnd, state))
             {
-                workspaces_.SetWindowState(hwnd, state.wasMinimized ? core::WindowVisibilityState::Minimized
-                                                                    : (state.wasMaximized ? core::WindowVisibilityState::Maximized : core::WindowVisibilityState::Visible));
+                workspaces_.SetWindowState(hwnd, state.wasMinimized
+                                                     ? core::WindowVisibilityState::Minimized
+                                                     : (state.wasMaximized ? core::WindowVisibilityState::Maximized
+                                                                           : core::WindowVisibilityState::Visible));
             }
             recovery_.RecordShow(hwnd);
             if (OnStateChanged)

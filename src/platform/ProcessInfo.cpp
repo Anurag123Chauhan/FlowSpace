@@ -22,11 +22,8 @@ namespace flowspace::platform
         using UniqueHandle = std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleCloser>;
     }
 
-    bool ProcessInfo::QueryDetails(
-        DWORD pid,
-        std::wstring &outFullPath,
-        std::wstring &outExeName,
-        uint64_t &outCreationTime)
+    bool ProcessInfo::QueryDetails(DWORD pid, std::wstring &outFullPath, std::wstring &outExeName,
+                                   uint64_t &outCreationTime)
     {
         outFullPath.clear();
         outExeName.clear();
@@ -75,8 +72,8 @@ namespace flowspace::platform
         if (!exePath.empty())
         {
             // Case-insensitive compare: Windows paths are case-insensitive.
-            return _wcsicmp(path.c_str(), exePath.c_str()) == 0
-                && (creationTime == 0 || created == 0 || creationTime == created);
+            return _wcsicmp(path.c_str(), exePath.c_str()) == 0 &&
+                   (creationTime == 0 || created == 0 || creationTime == created);
         }
         return creationTime == 0 || created == 0 || creationTime == created;
     }

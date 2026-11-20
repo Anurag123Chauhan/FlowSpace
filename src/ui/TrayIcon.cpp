@@ -26,7 +26,8 @@ namespace flowspace::ui
             bi.bV5AlphaMask = 0xFF000000;
 
             void *data = nullptr;
-            HBITMAP bmp = CreateDIBSection(screenDc, reinterpret_cast<BITMAPINFO *>(&bi), DIB_RGB_COLORS, &data, nullptr, 0);
+            HBITMAP bmp =
+                CreateDIBSection(screenDc, reinterpret_cast<BITMAPINFO *>(&bi), DIB_RGB_COLORS, &data, nullptr, 0);
             if (!bmp || !data)
             {
                 return LoadIcon(nullptr, IDI_APPLICATION);
@@ -45,12 +46,10 @@ namespace flowspace::ui
             {
                 for (int x = 0; x < size; ++x)
                 {
-                    // Back square
                     if (x >= inset && x < size - inset && y >= inset && y < size - inset)
                     {
                         put(x, y, accent);
                     }
-                    // Front square (offset up-right)
                     const int f = inset + size / 6;
                     if (x >= f && x < size - inset && y >= 0 + f - inset && y < size - inset - size / 6)
                     {
@@ -166,8 +165,8 @@ namespace flowspace::ui
             POINT pt;
             GetCursorPos(&pt);
             SetForegroundWindow(window_); // required for correct menu dismissal
-            const int cmd = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON,
-                                           pt.x, pt.y, 0, window_, nullptr);
+            const int cmd =
+                TrackPopupMenu(menu, TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON, pt.x, pt.y, 0, window_, nullptr);
             DestroyMenu(menu);
             return cmd;
         }

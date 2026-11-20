@@ -5,17 +5,11 @@
 
 namespace flowspace::platform
 {
-    /// <summary>
-    /// Installs WinEvent hooks (out-of-context is NOT used: the hooks are installed on the
-    /// main thread, so callbacks arrive through the message loop and are serialized with all
-    /// other engine work by construction). Events tracked:
-    ///   EVENT_OBJECT_CREATE / SHOW / HIDE / DESTROY, EVENT_SYSTEM_MOVESIZEEND,
-    ///   EVENT_SYSTEM_FOREGROUND.
-    /// </summary>
+    /// Watches window creation, visibility, movement, and focus changes.
+    /// Windows delivers callbacks through the app's message loop on its main thread.
     class WinEventHook
     {
-    public:
-        // Callback signature: (event, hwnd, idObject, idChild)
+      public:
         using Handler = std::function<void(DWORD, HWND, LONG, LONG)>;
 
         // Installs hooks; returns false when none could be installed. idEventThread must be
@@ -23,9 +17,8 @@ namespace flowspace::platform
         bool Install(DWORD idEventThread, Handler handler);
         void Uninstall();
 
-    private:
-        static void CALLBACK StaticCallback(HWINEVENTHOOK hook, DWORD event, HWND hwnd,
-                                            LONG idObject, LONG idChild,
+      private:
+        static void CALLBACK StaticCallback(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild,
                                             DWORD idEventThread, DWORD dwmsEventTime);
 
         HWINEVENTHOOK hCreate_ = nullptr;

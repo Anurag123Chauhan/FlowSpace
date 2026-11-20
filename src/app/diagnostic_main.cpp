@@ -1,6 +1,5 @@
-// Phase-1 diagnostic entry point: read-only report of monitors and manageable windows.
-// Preserved as a migration reference from the original single-file diagnostic; built with
-// -DFLOWSPACE_DIAGNOSTIC (see scripts/build.ps1). Never modifies window or wallpaper state.
+// Read-only report of monitors and manageable windows.
+// It never changes window or wallpaper state.
 #include "core/Models.h"
 #include "core/StringUtils.h"
 #include "platform/MonitorManager.h"
@@ -32,13 +31,20 @@ namespace
     {
         switch (state)
         {
-        case flowspace::core::WindowVisibilityState::Visible: return "Visible";
-        case flowspace::core::WindowVisibilityState::Minimized: return "Minimized";
-        case flowspace::core::WindowVisibilityState::Maximized: return "Maximized";
-        case flowspace::core::WindowVisibilityState::HiddenBySystem: return "HiddenBySystem";
-        case flowspace::core::WindowVisibilityState::CloakedByDwm: return "CloakedByDwm";
-        case flowspace::core::WindowVisibilityState::HiddenByFlowSpace: return "HiddenByFlowSpace";
-        default: return "Unknown";
+            case flowspace::core::WindowVisibilityState::Visible:
+                return "Visible";
+            case flowspace::core::WindowVisibilityState::Minimized:
+                return "Minimized";
+            case flowspace::core::WindowVisibilityState::Maximized:
+                return "Maximized";
+            case flowspace::core::WindowVisibilityState::HiddenBySystem:
+                return "HiddenBySystem";
+            case flowspace::core::WindowVisibilityState::CloakedByDwm:
+                return "CloakedByDwm";
+            case flowspace::core::WindowVisibilityState::HiddenByFlowSpace:
+                return "HiddenByFlowSpace";
+            default:
+                return "Unknown";
         }
     }
 }
@@ -55,11 +61,9 @@ int main()
     for (const auto &mon : monitors)
     {
         spdlog::info("  {} | {} | {} | bounds=({},{})-({},{}) | primary={} dpi={}",
-                     flowspace::core::WideToUtf8(mon.stableId),
-                     flowspace::core::WideToUtf8(mon.deviceName),
-                     flowspace::core::WideToUtf8(mon.friendlyName),
-                     mon.bounds.left, mon.bounds.top, mon.bounds.right, mon.bounds.bottom,
-                     mon.isPrimary, mon.dpiX);
+                     flowspace::core::WideToUtf8(mon.stableId), flowspace::core::WideToUtf8(mon.deviceName),
+                     flowspace::core::WideToUtf8(mon.friendlyName), mon.bounds.left, mon.bounds.top, mon.bounds.right,
+                     mon.bounds.bottom, mon.isPrimary, mon.dpiX);
     }
 
     const auto windows = windowManager.DiscoverWindows();
@@ -69,17 +73,14 @@ int main()
         std::string reason;
         if (!windowManager.IsManageableWindow(win.hwnd, &reason))
         {
-            spdlog::info("  [excluded: {}] HWND=0x{:08X} '{}'", reason,
-                         reinterpret_cast<uintptr_t>(win.hwnd), flowspace::core::WideToUtf8(win.title));
+            spdlog::info("  [excluded: {}] HWND=0x{:08X} '{}'", reason, reinterpret_cast<uintptr_t>(win.hwnd),
+                         flowspace::core::WideToUtf8(win.title));
             continue;
         }
         spdlog::info("  HWND=0x{:08X} '{}' class='{}' exe='{}' monitor='{}' state={}",
-                     reinterpret_cast<uintptr_t>(win.hwnd),
-                     flowspace::core::WideToUtf8(win.title),
-                     flowspace::core::WideToUtf8(win.className),
-                     flowspace::core::WideToUtf8(win.executableName),
-                     flowspace::core::WideToUtf8(win.monitorStableId),
-                     VisibilityStateToString(win.visibilityState));
+                     reinterpret_cast<uintptr_t>(win.hwnd), flowspace::core::WideToUtf8(win.title),
+                     flowspace::core::WideToUtf8(win.className), flowspace::core::WideToUtf8(win.executableName),
+                     flowspace::core::WideToUtf8(win.monitorStableId), VisibilityStateToString(win.visibilityState));
     }
 
     spdlog::info("Diagnostic complete. No state was modified.");

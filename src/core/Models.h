@@ -28,13 +28,15 @@ namespace flowspace::core
         [[nodiscard]] constexpr int32_t height() const noexcept { return bottom - top; }
         [[nodiscard]] constexpr bool Contains(int32_t x, int32_t y) const noexcept
         {
-            return x >= left && x < right && y >= top && y < bottom; // windows screen coordinates Y-axis increase downwards thats why y>=top
+            return x >= left && x < right && y >= top &&
+                   y < bottom; // windows screen coordinates Y-axis increase downwards thats why y>=top
         }
     };
 
     struct MonitorInfo
     {
-        std::wstring stableId;           // Persistent hardware device path (eg: \\?\DISPLAY#DEL4060#5&1a2b3c4d&0&UID4352#{some-guid})
+        std::wstring
+            stableId; // Persistent hardware device path (eg: \\?\DISPLAY#DEL4060#5&1a2b3c4d&0&UID4352#{some-guid})
         std::wstring deviceName;         // GDI device name (eg: \\.\DISPLAY1)
         std::wstring friendlyName;       // Friendly name (eg: LG UltraWide)
         HMONITOR runtimeHandle{nullptr}; // Transient runtime handle (valid only until next WM_DISPLAYCHANGE)
@@ -46,7 +48,8 @@ namespace flowspace::core
         bool isPrimary{false};   // True if this monitor is the primary display
         bool isConnected{false}; // True if this monitor is currently connected
 
-        std::string activeWorkspaceId; // Active workspace ID (eg: "1", "2", "3", etc.) or empty string if no workspace is active
+        std::string
+            activeWorkspaceId; // Active workspace ID (eg: "1", "2", "3", etc.) or empty string if no workspace is active
     };
 
     struct Workspace
@@ -101,7 +104,9 @@ namespace flowspace::core
 
         // Window state flags
         WindowVisibilityState visibilityState{WindowVisibilityState::Visible};
-        bool isManageable{true};     // True if the window is manageable by FlowSpace (eg: not a system window, not a UWP app, etc.)
-        std::string exclusionReason; // If isManageable is false, this field contains the reason why the window is excluded from management
+        bool isManageable{
+            true}; // True if the window is manageable by FlowSpace (eg: not a system window, not a UWP app, etc.)
+        std::string
+            exclusionReason; // If isManageable is false, this field contains the reason why the window is excluded from management
     };
 }

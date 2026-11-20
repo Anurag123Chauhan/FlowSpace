@@ -20,6 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Third-party components bundled with FlowSpace, including spdlog and
-nlohmann/json, are provided under their respective licenses. Those licenses
-and notices apply to the corresponding third-party components.
+Third-party components bundled with FlowSpace, including spdlog, its bundled
+{fmt} library, and nlohmann/json, are provided under their respective licenses.
+Those licenses and notices apply to the corresponding third-party components.

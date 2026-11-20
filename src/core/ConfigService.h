@@ -46,15 +46,15 @@ namespace flowspace::core
 
     struct AppRule
     {
-        std::string id;                       // persistent GUID
+        std::string id; // persistent GUID
         bool enabled{true};
-        std::wstring exeName;                 // e.g. L"devenv.exe" (case-insensitive)
-        std::wstring exePath;                 // optional full path filter
-        std::wstring titleContains;           // optional window title substring
-        std::string targetWorkspaceId;        // assignment for matched windows
+        std::wstring exeName;          // e.g. L"devenv.exe" (case-insensitive)
+        std::wstring exePath;          // optional full path filter
+        std::wstring titleContains;    // optional window title substring
+        std::string targetWorkspaceId; // assignment for matched windows
         MonitorPreference monitorPreference{MonitorPreference::Any};
-        std::wstring monitorStableId;         // used when monitorPreference == Specific
-        std::wstring launchCommand;           // optional "exe args" auto-launch command
+        std::wstring monitorStableId; // used when monitorPreference == Specific
+        std::wstring launchCommand;   // optional "exe args" auto-launch command
     };
 
     struct Settings
@@ -83,14 +83,14 @@ namespace flowspace::core
     // Result of a load operation; drives user-facing messaging in the UI.
     enum class ConfigLoadStatus
     {
-        Loaded,           // parsed successfully
+        Loaded,              // parsed successfully
         RecoveredFromBackup, // main file corrupt, backup used
-        FreshDefaults,    // no file existed (or all files unreadable): defaults created
+        FreshDefaults,       // no file existed (or all files unreadable): defaults created
     };
 
     class ConfigService
     {
-    public:
+      public:
         explicit ConfigService(std::wstring configPath, std::wstring backupPath);
 
         // Reads config.json; falls back to the backup when the main file is corrupt, then to
@@ -107,7 +107,7 @@ namespace flowspace::core
         // Default 4-workspace setup, used for a fresh install and by migration from v0.
         static void ApplyDefaultWorkspaces(Config &config);
 
-    private:
+      private:
         static void Migrate(Config &config); // schemaVersion steps; v0 → 1 → 2 (per-monitor workspaces)
         static void Normalize(Config &config);
         static void ApplyDefaultHotkeys(Config &config);

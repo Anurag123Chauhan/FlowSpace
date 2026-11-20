@@ -11,10 +11,6 @@
 namespace flowspace::ui
 {
 
-    // ===========================================================================
-    // Theme
-    // ===========================================================================
-
     namespace
     {
         // GDI substitutes a missing family silently, so verify the face exists
@@ -31,26 +27,29 @@ namespace flowspace::ui
             wcscpy_s(lf.lfFaceName, face);
 
             bool found = false;
-            EnumFontFamiliesExW(dc, &lf,
-                                [](const LOGFONTW *, const TEXTMETRICW *, DWORD, LPARAM param) -> int
-                                {
-                                    *reinterpret_cast<bool *>(param) = true;
-                                    return 0;
-                                },
-                                reinterpret_cast<LPARAM>(&found), 0);
+            EnumFontFamiliesExW(
+                dc, &lf,
+                [](const LOGFONTW *, const TEXTMETRICW *, DWORD, LPARAM param) -> int
+                {
+                    *reinterpret_cast<bool *>(param) = true;
+                    return 0;
+                },
+                reinterpret_cast<LPARAM>(&found), 0);
             ReleaseDC(nullptr, dc);
             return found;
         }
 
         const wchar_t *UiFace()
         {
-            static const wchar_t *face = FaceAvailable(L"Segoe UI Variable Text") ? L"Segoe UI Variable Text" : L"Segoe UI";
+            static const wchar_t *face =
+                FaceAvailable(L"Segoe UI Variable Text") ? L"Segoe UI Variable Text" : L"Segoe UI";
             return face;
         }
 
         const wchar_t *IconFace()
         {
-            static const wchar_t *face = FaceAvailable(L"Segoe Fluent Icons") ? L"Segoe Fluent Icons" : L"Segoe MDL2 Assets";
+            static const wchar_t *face =
+                FaceAvailable(L"Segoe Fluent Icons") ? L"Segoe Fluent Icons" : L"Segoe MDL2 Assets";
             return face;
         }
     }
@@ -110,12 +109,15 @@ namespace flowspace::ui
             // Query the Windows apps light/dark preference.
             BOOL dark = FALSE;
             HKEY key = nullptr;
-            LONG rc = RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_READ, &key);
+            LONG rc =
+                RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+                              0, KEY_READ, &key);
             if (rc == ERROR_SUCCESS)
             {
                 DWORD value = 0;
                 DWORD size = sizeof(value);
-                if (RegGetValueW(key, nullptr, L"AppsUseLightTheme", RRF_RT_REG_DWORD, nullptr, &value, &size) == ERROR_SUCCESS)
+                if (RegGetValueW(key, nullptr, L"AppsUseLightTheme", RRF_RT_REG_DWORD, nullptr, &value, &size) ==
+                    ERROR_SUCCESS)
                 {
                     dark = (value == 0);
                 }
@@ -197,11 +199,11 @@ namespace flowspace::ui
         };
 
         const wchar_t *ui = UiFace();
-        fontBrand_ = makeFont(14, FW_SEMIBOLD, ui);  // ~19px product name
-        fontTitle_ = makeFont(18, FW_SEMIBOLD, ui);  // ~24px page title
-        fontHeading_ = makeFont(12, FW_SEMIBOLD, ui); // ~16px section heading
-        fontBody_ = makeFont(10, FW_NORMAL, ui);      // ~13px body
-        fontSmall_ = makeFont(9, FW_NORMAL, ui);      // ~12px secondary
+        fontBrand_ = makeFont(14, FW_SEMIBOLD, ui);      // ~19px product name
+        fontTitle_ = makeFont(18, FW_SEMIBOLD, ui);      // ~24px page title
+        fontHeading_ = makeFont(12, FW_SEMIBOLD, ui);    // ~16px section heading
+        fontBody_ = makeFont(10, FW_NORMAL, ui);         // ~13px body
+        fontSmall_ = makeFont(9, FW_NORMAL, ui);         // ~12px secondary
         fontIcon_ = makeFont(13, FW_NORMAL, IconFace()); // ~17px icon glyphs
 
         fontsDirty_ = false;
@@ -270,10 +272,6 @@ namespace flowspace::ui
         }
         return RGB(168, 126, 90);
     }
-
-    // ===========================================================================
-    // Drawing primitives
-    // ===========================================================================
 
     namespace Draw
     {
@@ -386,7 +384,8 @@ namespace flowspace::ui
             SetBkMode(dc, TRANSPARENT);
             SetTextColor(dc, color);
             HGDIOBJ old = SelectObject(dc, font);
-            DrawTextW(dc, text.c_str(), static_cast<int>(text.size()), const_cast<RECT *>(&rect), format | DT_END_ELLIPSIS);
+            DrawTextW(dc, text.c_str(), static_cast<int>(text.size()), const_cast<RECT *>(&rect),
+                      format | DT_END_ELLIPSIS);
             SelectObject(dc, old);
         }
 
@@ -399,7 +398,8 @@ namespace flowspace::ui
             SetBkMode(dc, TRANSPARENT);
             SetTextColor(dc, color);
             HGDIOBJ old = SelectObject(dc, font);
-            DrawTextW(dc, text.c_str(), static_cast<int>(text.size()), const_cast<RECT *>(&rect), DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+            DrawTextW(dc, text.c_str(), static_cast<int>(text.size()), const_cast<RECT *>(&rect),
+                      DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
             SelectObject(dc, old);
         }
 
@@ -431,17 +431,19 @@ namespace flowspace::ui
         }
     } // namespace Draw
 
-    // ===========================================================================
-    // Components
-    // ===========================================================================
-
     namespace Components
     {
         namespace
         {
-            COLORREF SurfaceOf(const ThemeTokens &t) { return t.surface; }
+            COLORREF SurfaceOf(const ThemeTokens &t)
+            {
+                return t.surface;
+            }
 
-            HFONT BodyFontOf(const AppTheme &theme) { return theme.BodyFont(); }
+            HFONT BodyFontOf(const AppTheme &theme)
+            {
+                return theme.BodyFont();
+            }
         }
 
         void Card(HDC dc, const RECT &rect, const AppTheme &theme, bool elevated, int radius)
@@ -466,17 +468,16 @@ namespace flowspace::ui
             const COLORREF front = RGB(250, 246, 242); // warm off-white foreground
 
             // Fractions match the 256 px source artwork in scripts/make-icon.ps1.
-            auto square = [&](double fx1, double fy1, double fx2, double fy2, double fr,
-                              COLORREF fill, COLORREF border)
+            auto square = [&](double fx1, double fy1, double fx2, double fy2, double fr, COLORREF fill, COLORREF border)
             {
-                RECT r{ox + static_cast<int>(fx1 * s), oy + static_cast<int>(fy1 * s),
-                       ox + static_cast<int>(fx2 * s), oy + static_cast<int>(fy2 * s)};
+                RECT r{ox + static_cast<int>(fx1 * s), oy + static_cast<int>(fy1 * s), ox + static_cast<int>(fx2 * s),
+                       oy + static_cast<int>(fy2 * s)};
                 const int radius = std::max(2, static_cast<int>(fr * s));
                 Draw::RoundRect(dc, r, radius, fill, border, 1);
             };
-            square(0.133, 0.211, 0.867, 0.867, 0.086, back, back);  // back square
+            square(0.133, 0.211, 0.867, 0.867, 0.086, back, back);                   // back square
             square(0.250, 0.133, 0.984, 0.766, 0.086, front, theme.Tokens().border); // front square
-            square(0.641, 0.641, 0.758, 0.758, 0.031, back, back);  // accent dot
+            square(0.641, 0.641, 0.758, 0.758, 0.031, back, back);                   // accent dot
         }
 
         void Divider(HDC dc, const RECT &rect, const AppTheme &theme)
@@ -484,7 +485,8 @@ namespace flowspace::ui
             Draw::Fill(dc, rect, theme.Tokens().border);
         }
 
-        RECT Button(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &label, HFONT font, bool hovered, bool selected, bool accent)
+        RECT Button(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &label, HFONT font,
+                    bool hovered, bool selected, bool accent)
         {
             const auto &t = theme.Tokens();
             COLORREF fill;
@@ -507,7 +509,8 @@ namespace flowspace::ui
             return rect;
         }
 
-        RECT IconButton(HDC dc, const RECT &rect, const AppTheme &theme, wchar_t glyph, HFONT iconFont, bool hovered, bool selected, bool accent)
+        RECT IconButton(HDC dc, const RECT &rect, const AppTheme &theme, wchar_t glyph, HFONT iconFont, bool hovered,
+                        bool selected, bool accent)
         {
             const auto &t = theme.Tokens();
             COLORREF fill = hovered ? t.hover : (selected ? t.selected : t.surface);
@@ -539,24 +542,29 @@ namespace flowspace::ui
             return rect;
         }
 
-        RECT Badge(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &label, HFONT font, COLORREF fill, COLORREF text)
+        RECT Badge(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &label, HFONT font,
+                   COLORREF fill, COLORREF text)
         {
             Draw::RoundRect(dc, rect, 5, fill, fill, 1);
             Draw::Text(dc, label, rect, font, text, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
             return rect;
         }
 
-        void SectionHeader(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &heading, const std::wstring &description)
+        void SectionHeader(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &heading,
+                           const std::wstring &description)
         {
             const auto &t = theme.Tokens();
-            Draw::Text(dc, heading, {rect.left, rect.top, rect.right, rect.top + 20}, theme.HeadingFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
+            Draw::Text(dc, heading, {rect.left, rect.top, rect.right, rect.top + 20}, theme.HeadingFont(), t.text,
+                       DT_LEFT | DT_TOP | DT_SINGLELINE);
             if (!description.empty())
             {
-                Draw::Text(dc, description, {rect.left, rect.top + 20, rect.right, rect.top + 36}, theme.SmallFont(), t.textDim, DT_LEFT | DT_TOP | DT_SINGLELINE);
+                Draw::Text(dc, description, {rect.left, rect.top + 20, rect.right, rect.top + 36}, theme.SmallFont(),
+                           t.textDim, DT_LEFT | DT_TOP | DT_SINGLELINE);
             }
         }
 
-        void EmptyState(HDC dc, const RECT &rect, const AppTheme &theme, wchar_t glyph, const std::wstring &heading, const std::wstring &description)
+        void EmptyState(HDC dc, const RECT &rect, const AppTheme &theme, wchar_t glyph, const std::wstring &heading,
+                        const std::wstring &description)
         {
             const auto &t = theme.Tokens();
             int cx = rect.left + (rect.right - rect.left) / 2;
@@ -564,10 +572,12 @@ namespace flowspace::ui
             RECT iconRect{cx - iconSize / 2, rect.top, cx + iconSize / 2, rect.top + iconSize};
             Draw::Icon(dc, glyph, iconRect, theme.IconFont(), t.textDim);
 
-            RECT headingRect{rect.left, rect.top + iconSize + theme.Space12(), rect.right, rect.top + iconSize + theme.Space12() + 22};
+            RECT headingRect{rect.left, rect.top + iconSize + theme.Space12(), rect.right,
+                             rect.top + iconSize + theme.Space12() + 22};
             Draw::Text(dc, heading, headingRect, theme.HeadingFont(), t.text, DT_CENTER | DT_TOP | DT_SINGLELINE);
 
-            RECT descRect{rect.left + theme.Space24(), rect.top + iconSize + theme.Space12() + 26, rect.right - theme.Space24(), rect.bottom};
+            RECT descRect{rect.left + theme.Space24(), rect.top + iconSize + theme.Space12() + 26,
+                          rect.right - theme.Space24(), rect.bottom};
             Draw::TextWrapped(dc, description, descRect, theme.SmallFont(), t.textDim);
         }
     } // namespace Components

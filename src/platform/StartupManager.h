@@ -5,13 +5,11 @@
 
 namespace flowspace::platform
 {
-    /// <summary>
-    /// Per-user "start with Windows" integration via the HKCU Run key. No administrator
-    /// rights required: the value lives in the logged-in user's hive.
-    /// </summary>
+    /// Adds or removes FlowSpace from the current user's startup apps.
+    /// This changes the user's registry settings and does not require admin rights.
     class StartupManager
     {
-    public:
+      public:
         explicit StartupManager(std::wstring valueName = L"FlowSpace") : valueName_(std::move(valueName)) {}
 
         // Reads the current registration. Returns false when not registered.
@@ -22,7 +20,7 @@ namespace flowspace::platform
         bool Enable();
         bool Disable();
 
-    private:
+      private:
         std::wstring valueName_;
         static constexpr const wchar_t *kRunKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
     };
