@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(FlowSpace
-    VERSION 0.1.0
+    VERSION 1.0.0
     DESCRIPTION "Independent per-monitor workspace manager for Windows"
     LANGUAGES CXX)
 
