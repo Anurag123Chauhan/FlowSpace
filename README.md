@@ -62,6 +62,10 @@ Open Settings (`Ctrl+Alt+O` or tray → Open Settings) to:
 
 App rules send matching applications to a workspace automatically.
 
+![Illustrative animation: two monitors with independent workspaces; focusing an app on Monitor 1, adding an app rule, and seeing a new matching window open in that monitor's workspace](docs/assets/app-rules-two-monitors.gif)
+
+*Illustrative animation, not a screen recording: each monitor switches independently, and an app rule places new matching windows in the workspace that was active on that app's monitor.*
+
 **Add a rule in Settings:**
 
 1. Focus a window of the app you want to assign (for example, Notepad).
