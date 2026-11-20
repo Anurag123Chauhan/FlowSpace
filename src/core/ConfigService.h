@@ -57,39 +57,27 @@ namespace flowspace::core
         std::wstring launchCommand;           // optional "exe args" auto-launch command
     };
 
-    struct OriginalWallpaper
-    {
-        std::wstring monitorDevicePath; // wallpaper-service monitor id
-        std::wstring imagePath;         // empty = solid color only
-        uint32_t backgroundColor{0};
-        int32_t fit{4}; // DESKTOP_WALLPAPER_POSITION value
-    };
-
     struct Settings
     {
         HideMode hideMode{HideMode::Hide};
         bool startWithWindows{false};
         bool switchByMouseMonitor{true};      // hotkeys act on the monitor under the cursor
-        bool wallpaperManagementEnabled{true};
-        bool restoreWallpaperOnExit{true};
         bool paused{false};                   // suspended workspace management
         bool groupWindowsByApplication{true}; // new windows inherit the app's workspace
         bool showOverlay{true};
         std::string overlayAnimation{"slide"}; // none | slide | fade | scale
         int32_t overlayAnimationMs{180};
-        bool wallpaperCaptureInitialized{false};
     };
 
     struct Config
     {
-        int32_t schemaVersion{1};
+        int32_t schemaVersion{2};
         Settings settings;
         std::vector<Workspace> workspaces;
         std::vector<AppRule> appRules;
         std::vector<HotkeyBinding> hotkeys;
         // Active workspace per monitor keyed by the monitor's stable device path.
         std::map<std::wstring, std::string, std::less<>> monitorState;
-        std::vector<OriginalWallpaper> originalWallpapers;
     };
 
     // Result of a load operation; drives user-facing messaging in the UI.
@@ -120,7 +108,7 @@ namespace flowspace::core
         static void ApplyDefaultWorkspaces(Config &config);
 
     private:
-        static void Migrate(Config &config); // schemaVersion steps; v0 (missing field) → 1
+        static void Migrate(Config &config); // schemaVersion steps; v0 → 1 → 2 (per-monitor workspaces)
         static void Normalize(Config &config);
         static void ApplyDefaultHotkeys(Config &config);
 

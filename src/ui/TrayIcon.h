@@ -8,7 +8,7 @@ namespace flowspace::ui
 {
     /// <summary>
     /// System tray icon with a context menu (open settings, per-monitor workspace switching,
-    /// reveal all, pause, wallpaper toggle, restart engine, exit). The callback message is
+    /// reveal all, pause, restart engine, exit). The callback message is
     /// delivered to the app's message window, keeping tray handling on the main thread.
     /// </summary>
     class TrayIcon

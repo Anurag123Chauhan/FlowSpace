@@ -54,21 +54,12 @@ namespace flowspace::core
         std::string id;           // Persistent unique ID (eg: "ws-dev", UUID)
         std::string name;         // User-facing lable (eg: "Development", "Gaming", etc.)
         std::string icon{"grid"}; // Fluent icon glyph or identifier (eg: "grid", "code", "gamepad", etc.)
-        std::string accentColor{"#4389D8"};
-        int32_t orderIndex{0}; // Order index for sorting workspaces in the UI
-        // Optional per-monitor wallpaper overrides: map<MonitorStableId, WallpaperPath>
-        // Empty key "" acts as the workspace's default wallpaper across all monitors.
-        std::wstring defaultWallpaperPath{};
-
-        // Wallpaper fitted to the desktop via IDesktopWallpaper::SetPosition when applied.
-        int32_t wallpaperFit{4}; // 0 Center, 1 Tile, 2 Stretch, 3 Fit, 4 Fill, 5 Span (DESKTOP_WALLPAPER_POSITION)
-        std::wstring wallpaperBackgroundColor{L"#000000"};
-
-        // Optional per-monitor wallpaper overrides keyed by the monitor's stable device path.
-        // Values are full wallpaper image paths; a missing key falls back to defaultWallpaperPath.
-        std::map<std::wstring, std::wstring, std::less<>> perMonitorWallpaper;
-        // Per-monitor wallpaper fit overrides using the same DESKTOP_WALLPAPER_POSITION values.
-        std::map<std::wstring, int32_t, std::less<>> perMonitorWallpaperFit;
+        std::string accentColor{"#A87E5A"};
+        int32_t orderIndex{0}; // Order index within the owning monitor's workspace list
+        // Stable ID of the monitor that owns this workspace. Workspaces belong to exactly one
+        // monitor: switching a monitor only cycles through its own list. Empty means the
+        // workspace has not been assigned yet (legacy config before monitor provisioning).
+        std::wstring monitorStableId;
 
         // Overlay appearance. The accent color is shared with accentColor; the remaining fields
         // only affect the switch overlay and previews.

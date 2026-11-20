@@ -38,7 +38,7 @@ namespace flowspace::ui
                 bits[y * size + x] = color;
             };
 
-            const uint32_t accent = 0xFF4389D8;
+            const uint32_t accent = 0xFFA87E5A;
             const uint32_t white = 0xFFFFFFFF;
             const int inset = size / 8;
             for (int y = 0; y < size; ++y)

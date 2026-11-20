@@ -6,7 +6,6 @@
 #include "platform/HotkeyManager.h"
 #include "platform/MonitorManager.h"
 #include "platform/StartupManager.h"
-#include "platform/WallpaperManager.h"
 #include "platform/WinEventHook.h"
 #include "ui/MainWindow.h"
 #include "ui/SwitchNotification.h"
@@ -98,7 +97,6 @@ namespace
         flowspace::platform::WindowManager windows{monitors};
         flowspace::core::WorkspaceManager workspaces;
         std::unique_ptr<flowspace::core::RecoveryManager> recovery;
-        flowspace::platform::WallpaperManager wallpaper;
         flowspace::platform::HotkeyManager hotkeys{1};
         std::unique_ptr<flowspace::core::ConfigService> config;
         std::unique_ptr<flowspace::engine::WorkspaceEngine> engine;
@@ -113,9 +111,9 @@ namespace
             ctx.config = config.get();
             ctx.recovery = recovery.get();
             ctx.monitors = &monitors;
-            ctx.wallpaper = &wallpaper;
             ctx.startup = &startup;
-            ctx.onConfigSaved = [this] { OnConfigSaved(); };
+            ctx.onConfigSaved = [this]
+            { OnConfigSaved(); };
             return ctx;
         }
 
@@ -145,19 +143,18 @@ namespace
         {
             // Per-monitor workspace switching section.
             const auto monitorsList = engine->GetMonitors();
-            const auto workspaceList = engine->GetWorkspaces();
             for (size_t m = 0; m < monitorsList.size() && m < 8; ++m)
             {
                 std::wstring label = monitorsList[m].isPrimary ? L"Primary: " : L"Monitor: ";
                 label += monitorsList[m].friendlyName.empty() ? L"Display" : monitorsList[m].friendlyName;
 
+                const auto workspaceList = engine->GetWorkspacesForMonitor(monitorsList[m].stableId);
                 HMENU sub = CreatePopupMenu();
                 for (size_t w = 0; w < workspaceList.size() && w < 20; ++w)
                 {
                     const UINT id = kTrayMenuBase + 100 + static_cast<UINT>(m) * 25 + static_cast<UINT>(w);
                     std::wstring text = std::to_wstring(w + 1) + L"  " + flowspace::core::Utf8ToWide(workspaceList[w].name);
-                    const UINT flags = MF_STRING
-                                     | (workspaceList[w].id == monitorsList[m].activeWorkspaceId ? MF_CHECKED : 0);
+                    const UINT flags = MF_STRING | (workspaceList[w].id == monitorsList[m].activeWorkspaceId ? MF_CHECKED : 0);
                     AppendMenuW(sub, flags, id, text.c_str());
                 }
                 AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(sub), label.c_str());
@@ -168,6 +165,7 @@ namespace
         {
             if (cmd == kTrayMenuBase + 0)
             {
+                engine->CaptureForegroundWindowInfo();
                 flowspace::ui::MainWindow::Open(hinstance, MainWindowContext());
             }
             else if (cmd == kTrayMenuBase + 1)
@@ -195,11 +193,6 @@ namespace
         {
             const std::wstring monitorId = engine->ResolveActionMonitor();
             const auto monitorsList = engine->GetMonitors();
-            const auto workspaceList = engine->GetWorkspaces();
-            if (workspaceList.empty())
-            {
-                return;
-            }
             const core::MonitorInfo *target = nullptr;
             for (const auto &mon : monitorsList)
             {
@@ -210,6 +203,13 @@ namespace
                 }
             }
             if (!target)
+            {
+                return;
+            }
+
+            // The switcher lists only the target monitor's own workspaces.
+            const auto workspaceList = engine->GetWorkspacesForMonitor(monitorId);
+            if (workspaceList.empty())
             {
                 return;
             }
@@ -249,6 +249,7 @@ namespace
                 OpenSwitcherPopup();
                 break;
             case flowspace::core::HotkeyAction::OpenSettings:
+                engine->CaptureForegroundWindowInfo();
                 flowspace::ui::MainWindow::Open(hinstance, MainWindowContext());
                 break;
             default:
@@ -285,6 +286,7 @@ namespace
                     const int cmd = app->tray.HandleCallbackMessage(lParam);
                     if (cmd == -1)
                     {
+                        app->engine->CaptureForegroundWindowInfo();
                         flowspace::ui::MainWindow::Open(app->hinstance, app->MainWindowContext());
                     }
                     else if (cmd > 0)
@@ -317,19 +319,17 @@ namespace
                 {
                     if (mon.stableId == monitorStableId)
                     {
-                        const auto all = engine->GetWorkspaces();
+                        const auto monitorWorkspaces = engine->GetWorkspacesForMonitor(monitorStableId);
                         int number = 0;
-                        for (size_t i = 0; i < all.size(); ++i)
+                        for (size_t i = 0; i < monitorWorkspaces.size(); ++i)
                         {
-                            if (all[i].id == ws.id)
+                            if (monitorWorkspaces[i].id == ws.id)
                             {
                                 number = static_cast<int>(i) + 1;
                                 break;
                             }
                         }
-                        flowspace::ui::SwitchNotification::Show(hinstance, mon, ws, number,
-                                                                config->Get().settings.overlayAnimation,
-                                                                config->Get().settings.overlayAnimationMs);
+                        flowspace::ui::SwitchNotification::Show(hinstance, mon, ws, number, config->Get().settings.overlayAnimation, config->Get().settings.overlayAnimationMs);
                         return;
                     }
                 }
@@ -347,14 +347,15 @@ namespace
             ApplyStartupEntry();
 
             tray.Initialize(messageWindow, WM_APP_TRAY, kTrayMenuBase);
-            tray.SetWorkspaceMenuBuilder([this](HMENU menu) { BuildTrayMenu(menu); });
+            tray.SetWorkspaceMenuBuilder([this](HMENU menu)
+                                         { BuildTrayMenu(menu); });
             tray.Update(config->Get().settings.paused);
 
             // WinEvent hooks: callbacks are delivered on this thread via the message loop,
             // serialized with all other engine work.
             const DWORD threadId = GetCurrentThreadId();
             hooks.Install(threadId, [this](DWORD event, HWND hwnd, LONG, LONG)
-            {
+                          {
                 using ET = flowspace::engine::WindowEventType;
                 switch (event)
                 {
@@ -365,20 +366,18 @@ namespace
                 case EVENT_SYSTEM_MOVESIZEEND: engine->HandleWindowEvent(ET::MoveSizeEnd, hwnd); break;
                 case EVENT_SYSTEM_FOREGROUND:  engine->HandleWindowEvent(ET::Foreground, hwnd); break;
                 default: break;
-                }
-            });
+                } });
 
             // Report conflicts found during hotkey registration (also visible in the UI page).
             return true;
         }
 
-        // Graceful shutdown: unregister hotkeys, reveal hidden windows, restore wallpapers.
+        // Graceful shutdown: unregister hotkeys, reveal hidden windows.
         void Shutdown()
         {
             hooks.Uninstall();
             tray.Shutdown();
-            const bool restore = config->Get().settings.restoreWallpaperOnExit;
-            engine->Shutdown(restore);
+            engine->Shutdown();
         }
     };
 }
@@ -403,7 +402,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int nCmdShow)
     InitializeLogging();
     EnablePerMonitorDpiAwareness();
 
-    // COM (STA) for IDesktopWallpaper and the shell APIs; required before WallpaperManager.
+    // COM (STA) for shell APIs.
     HRESULT comHr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (FAILED(comHr))
     {
@@ -424,7 +423,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int nCmdShow)
     app.config = std::make_unique<flowspace::core::ConfigService>(app.configPath, app.backupPath);
     app.engine = std::make_unique<flowspace::engine::WorkspaceEngine>(
         app.monitors, app.windows, app.workspaces, *app.config, *app.recovery,
-        app.wallpaper, app.hotkeys);
+        app.hotkeys);
 
     // UI classes.
     flowspace::ui::RegisterSwitchNotificationClass(hInstance);

@@ -26,10 +26,9 @@ namespace flowspace::engine
                                      core::WorkspaceManager &workspaces,
                                      core::ConfigService &config,
                                      core::RecoveryManager &recovery,
-                                     platform::WallpaperManager &wallpaper,
                                      platform::HotkeyManager &hotkeys)
         : monitors_(monitors), windows_(windows), workspaces_(workspaces), config_(config),
-          recovery_(recovery), wallpaper_(wallpaper), hotkeys_(hotkeys)
+          recovery_(recovery), hotkeys_(hotkeys)
     {
     }
 
@@ -46,15 +45,19 @@ namespace flowspace::engine
 
     void WorkspaceEngine::Initialize()
     {
+        // Restore the persisted per-monitor workspace lists before reconciling display state.
+        if (!config_.Get().workspaces.empty())
+        {
+            workspaces_.LoadWorkspaces(config_.Get().workspaces);
+        }
+
         const auto detected = monitors_.EnumerateMonitors();
         workspaces_.ReconcileMonitors(detected);
 
         auto &config = config_.Get();
 
-        // Apply persisted per-monitor active workspace state.
-        const auto defaultWs = workspaces_.GetWorkspaces().empty()
-                                   ? std::string{}
-                                   : workspaces_.GetWorkspaces().front().id;
+        // Apply persisted per-monitor active workspace state. ReconcileMonitors already gives
+        // every monitor a usable default, so a stale/cross-monitor reference simply falls back.
         for (const auto &mon : detected)
         {
             auto it = config.monitorState.find(mon.stableId);
@@ -62,9 +65,9 @@ namespace flowspace::engine
             {
                 workspaces_.SetActiveWorkspace(mon.stableId, it->second);
             }
-            else if (!defaultWs.empty())
+            if (auto active = workspaces_.GetActiveWorkspaceId(mon.stableId); active.has_value())
             {
-                workspaces_.SetActiveWorkspace(mon.stableId, defaultWs);
+                config.monitorState[mon.stableId] = *active;
             }
         }
 
@@ -121,55 +124,112 @@ namespace flowspace::engine
             spdlog::info("Recovery: restored {} window(s), dropped {} stale entr(ies)", restored, dropped);
         }
 
-        CaptureOriginalWallpapers();
         ApplyHotkeys();
+        ApplyRulesToOpenWindows();
+        PersistWorkspacesToConfig();
         config_.Save();
     }
 
-    void WorkspaceEngine::CaptureOriginalWallpapers()
+    void WorkspaceEngine::ApplyRulesToOpenWindows()
     {
-        auto &config = config_.Get();
-        if (config.settings.wallpaperCaptureInitialized || !config.settings.wallpaperManagementEnabled)
+        const auto &config = config_.Get();
+        if (config.appRules.empty())
         {
             return;
         }
-        if (!wallpaper_.IsAvailable())
+
+        // Discover all currently manageable windows and sync them into the tracker.
+        const auto discovered = windows_.DiscoverWindows(
+            platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
+        workspaces_.SyncDiscoveredWindows(discovered);
+
+        const auto tracked = workspaces_.GetTrackedWindows();
+        if (tracked.empty())
         {
             return;
         }
-        const auto captured = wallpaper_.CaptureAll();
-        config.originalWallpapers.clear();
-        for (const auto &c : captured)
+
+        int moved = 0;
+        for (const auto &win : tracked)
         {
-            core::OriginalWallpaper w;
-            w.monitorDevicePath = c.monitorDevicePath;
-            w.imagePath = c.imagePath;
-            w.backgroundColor = static_cast<uint32_t>(c.backgroundColor);
-            w.fit = static_cast<int32_t>(c.position);
-            config.originalWallpapers.push_back(w);
+            if (!win.isManageable || win.hwnd == nullptr || !IsWindow(win.hwnd))
+            {
+                continue;
+            }
+
+            const core::AppRule *matchedRule = nullptr;
+            const std::string assignment = ResolveAssignmentForNewWindow(win, &matchedRule);
+            if (assignment.empty() || matchedRule == nullptr)
+            {
+                continue;
+            }
+
+            // Already on the correct workspace — nothing to do.
+            if (win.assignedWorkspaceId == assignment)
+            {
+                continue;
+            }
+
+            const auto targetWs = workspaces_.GetWorkspace(assignment);
+            if (!targetWs.has_value())
+            {
+                continue;
+            }
+
+            const std::wstring targetMonitor = targetWs->monitorStableId.empty()
+                                                   ? win.monitorStableId
+                                                   : targetWs->monitorStableId;
+
+            // If the rule has a Specific monitor preference, use that monitor.
+            std::wstring finalMonitor = targetMonitor;
+            if (matchedRule->monitorPreference == core::MonitorPreference::Specific &&
+                !matchedRule->monitorStableId.empty())
+            {
+                finalMonitor = matchedRule->monitorStableId;
+            }
+
+            // If the window is already on the target workspace on the correct monitor, skip.
+            if (win.monitorStableId == finalMonitor && win.assignedWorkspaceId == assignment)
+            {
+                continue;
+            }
+
+            // Move the window to the target monitor if needed.
+            if (finalMonitor != win.monitorStableId)
+            {
+                spdlog::info("Rule startup: moving HWND=0x{:08X} ('{}') to monitor '{}'",
+                             reinterpret_cast<uintptr_t>(win.hwnd),
+                             std::string(win.title.begin(), win.title.end()),
+                             Narrow(finalMonitor));
+                windows_.MoveWindowToMonitor(win.hwnd, finalMonitor);
+            }
+
+            // Assign the window to the target workspace.
+            workspaces_.AssignWindowToWorkspace(win.hwnd, assignment, finalMonitor);
+
+            // Switch the target monitor to the target workspace so the window becomes visible.
+            SwitchMonitorToWorkspace(finalMonitor, assignment);
+
+            ++moved;
         }
-        config.settings.wallpaperCaptureInitialized = true;
-        spdlog::info("Captured original wallpaper state for {} monitor(s)", config.originalWallpapers.size());
+
+        if (moved > 0)
+        {
+            spdlog::info("Applied app rules to {} open window(s) at startup", moved);
+            PersistWorkspacesToConfig();
+            config_.Save();
+            if (OnStateChanged)
+            {
+                OnStateChanged();
+            }
+        }
     }
 
-    void WorkspaceEngine::Shutdown(bool restoringWallpaper)
+    void WorkspaceEngine::Shutdown()
     {
         hotkeys_.UnregisterAll();
         RevealAllWindows();
-        if (restoringWallpaper && wallpaper_.IsAvailable())
-        {
-            std::vector<platform::CapturedWallpaper> captured;
-            for (const auto &w : config_.Get().originalWallpapers)
-            {
-                platform::CapturedWallpaper c;
-                c.monitorDevicePath = w.monitorDevicePath;
-                c.imagePath = w.imagePath;
-                c.backgroundColor = static_cast<COLORREF>(w.backgroundColor);
-                c.position = static_cast<platform::WallpaperPosition>(w.fit);
-                captured.push_back(c);
-            }
-            wallpaper_.RestoreAll(captured);
-        }
+        PersistWorkspacesToConfig();
         config_.Save();
     }
 
@@ -272,6 +332,13 @@ namespace flowspace::engine
             spdlog::warn("Switch rejected: unknown workspace '{}'", workspaceId);
             return result;
         }
+        if (!ws->monitorStableId.empty() && ws->monitorStableId != monitorStableId)
+        {
+            result.error = "workspace belongs to another monitor";
+            spdlog::warn("Switch rejected: workspace '{}' does not belong to monitor '{}'",
+                         workspaceId, Narrow(monitorStableId));
+            return result;
+        }
 
         const auto active = workspaces_.GetActiveWorkspaceId(monitorStableId);
         if (!active.has_value())
@@ -305,7 +372,7 @@ namespace flowspace::engine
 
     SwitchResult WorkspaceEngine::SwitchByNumber(const std::wstring &monitorStableId, int numberOneBased)
     {
-        const auto all = workspaces_.GetWorkspaces();
+        const auto all = workspaces_.GetWorkspacesForMonitor(monitorStableId);
         SwitchResult result;
         result.monitorStableId = monitorStableId;
         if (numberOneBased < 1 || numberOneBased > static_cast<int>(all.size()))
@@ -327,6 +394,7 @@ namespace flowspace::engine
 
         const auto ws = workspaces_.GetWorkspace(workspaceId);
         const auto activeId = workspaces_.GetActiveWorkspaceId(monitorStableId);
+        (void)activeId;
 
         // 1. Discover manageable windows and sync them into the tracker.
         //    Unknown windows get assigned to the ACTIVE workspace of the monitor they are on,
@@ -411,16 +479,14 @@ namespace flowspace::engine
         workspaces_.SetActiveWorkspace(monitorStableId, workspaceId);
         config_.Get().monitorState[monitorStableId] = workspaceId;
 
-        // 5. Wallpaper for this monitor from the destination workspace.
-        ApplyWallpaperForMonitor(monitorStableId);
-
-        // 6. Overlay.
+        // 5. Overlay.
         if (OnOverlayShow && ws.has_value())
         {
             OnOverlayShow(*ws, monitorStableId);
         }
 
         // 7. Persist monitor state (windows themselves are runtime state, never persisted).
+        PersistWorkspacesToConfig();
         config_.Save();
         if (OnStateChanged)
         {
@@ -502,7 +568,8 @@ namespace flowspace::engine
         {
             return false;
         }
-        if (!workspaces_.GetWorkspace(workspaceId).has_value())
+        const auto targetWorkspace = workspaces_.GetWorkspace(workspaceId);
+        if (!targetWorkspace.has_value())
         {
             return false;
         }
@@ -514,6 +581,12 @@ namespace flowspace::engine
         workspaces_.SyncDiscoveredWindows({fg});
 
         const auto targetMonitor = monitorStableId.empty() ? fg.monitorStableId : monitorStableId;
+        if (!targetWorkspace->monitorStableId.empty() && targetWorkspace->monitorStableId != targetMonitor)
+        {
+            spdlog::warn("Move: workspace '{}' belongs to monitor '{}', not '{}'",
+                         workspaceId, Narrow(targetWorkspace->monitorStableId), Narrow(targetMonitor));
+            return false;
+        }
         if (!workspaces_.AssignWindowToWorkspace(fg.hwnd, workspaceId, targetMonitor))
         {
             spdlog::warn("Move: refused to hide HWND=0x{:08X} ('{}'); window is not tracked", reinterpret_cast<uintptr_t>(fg.hwnd), Narrow(fg.title));
@@ -554,17 +627,22 @@ namespace flowspace::engine
 
     bool WorkspaceEngine::MoveActiveWindowByNumber(int numberOneBased)
     {
-        const auto all = workspaces_.GetWorkspaces();
-        if (numberOneBased < 1 || numberOneBased > static_cast<int>(all.size()))
-        {
-            return false;
-        }
         const auto fg = ResolveMoveWindow();
         if (fg.hwnd == nullptr)
         {
             return false;
         }
-        return MoveActiveWindowToWorkspace(all[static_cast<size_t>(numberOneBased - 1)].id, ResolveWindowActionMonitor(fg), &fg);
+        const auto monitorId = ResolveWindowActionMonitor(fg);
+        if (monitorId.empty())
+        {
+            return false;
+        }
+        const auto all = workspaces_.GetWorkspacesForMonitor(monitorId);
+        if (numberOneBased < 1 || numberOneBased > static_cast<int>(all.size()))
+        {
+            return false;
+        }
+        return MoveActiveWindowToWorkspace(all[static_cast<size_t>(numberOneBased - 1)].id, monitorId, &fg);
     }
 
     void WorkspaceEngine::RevealAllWindows()
@@ -615,10 +693,6 @@ namespace flowspace::engine
         workspaces_.ReconcileMonitors(detected);
 
         auto &config = config_.Get();
-        const std::string defaultWs = workspaces_.GetWorkspaces().empty()
-                                          ? std::string{}
-                                          : workspaces_.GetWorkspaces().front().id;
-
         for (const auto &mon : detected)
         {
             auto it = config.monitorState.find(mon.stableId);
@@ -626,15 +700,17 @@ namespace flowspace::engine
             {
                 workspaces_.SetActiveWorkspace(mon.stableId, it->second);
             }
-            else if (!defaultWs.empty())
+            // ReconcileMonitors guarantees a valid default for new monitors.
+            if (auto active = workspaces_.GetActiveWorkspaceId(mon.stableId); active.has_value())
             {
-                workspaces_.SetActiveWorkspace(mon.stableId, defaultWs);
+                config.monitorState[mon.stableId] = *active;
             }
         }
 
         // Windows that were on a now-disconnected monitor: Windows itself relocates their
         // geometry; we refresh each tracked window's monitor id on the next enumeration.
         // Persisted workspace configuration is intentionally preserved for reconnects.
+        PersistWorkspacesToConfig();
         config_.Save();
         if (OnStateChanged)
         {
@@ -645,6 +721,12 @@ namespace flowspace::engine
 
     bool WorkspaceEngine::MatchesRule(const core::WindowInfo &window, const core::AppRule &rule) const
     {
+        // A rule with no match criteria (empty exeName, exePath, titleContains) would match
+        // every window, so reject it outright.
+        if (rule.exeName.empty() && rule.exePath.empty() && rule.titleContains.empty())
+        {
+            return false;
+        }
         if (!rule.enabled)
         {
             return false;
@@ -661,6 +743,14 @@ namespace flowspace::engine
         {
             return false;
         }
+        // A Specific monitor preference rule only matches windows on that monitor.
+        if (rule.monitorPreference == core::MonitorPreference::Specific && !rule.monitorStableId.empty())
+        {
+            if (window.monitorStableId != rule.monitorStableId)
+            {
+                return false;
+            }
+        }
         return true;
     }
 
@@ -671,11 +761,25 @@ namespace flowspace::engine
             *matchedRule = nullptr;
         }
         const auto &config = config_.Get();
+        const std::wstring &monitorId = window.monitorStableId;
+
+        // A workspace is only a valid target for a window when it belongs to the monitor the
+        // window appeared on; otherwise the window would be hidden on a display that can never
+        // show it. Rules/group inheritance that point elsewhere fall through to the monitor.
+        auto validTarget = [&](const std::string &workspaceId)
+        {
+            if (workspaceId.empty())
+            {
+                return false;
+            }
+            const auto ws = workspaces_.GetWorkspace(workspaceId);
+            return ws.has_value() && (ws->monitorStableId.empty() || ws->monitorStableId == monitorId);
+        };
 
         // 1. Explicit application rules (first enabled match wins).
         for (const auto &rule : config.appRules)
         {
-            if (MatchesRule(window, rule))
+            if (MatchesRule(window, rule) && validTarget(rule.targetWorkspaceId))
             {
                 if (matchedRule)
                 {
@@ -685,12 +789,16 @@ namespace flowspace::engine
             }
         }
 
-        // 2. Group by application: inherit the assignment of existing windows of the same exe.
+        // 2. Group by application: inherit the assignment of existing windows of the same exe
+        //    on the same monitor.
         if (config.settings.groupWindowsByApplication && !window.executableName.empty())
         {
             for (const auto &tracked : workspaces_.GetTrackedWindows())
             {
-                if (tracked.hwnd != window.hwnd && !tracked.assignedWorkspaceId.empty() && _wcsicmp(tracked.executableName.c_str(), window.executableName.c_str()) == 0)
+                if (tracked.hwnd != window.hwnd &&
+                    tracked.monitorStableId == monitorId &&
+                    _wcsicmp(tracked.executableName.c_str(), window.executableName.c_str()) == 0 &&
+                    validTarget(tracked.assignedWorkspaceId))
                 {
                     return tracked.assignedWorkspaceId;
                 }
@@ -698,9 +806,17 @@ namespace flowspace::engine
         }
 
         // 3. Fallback: the active workspace of the monitor the window appeared on.
-        if (auto active = workspaces_.GetActiveWorkspaceId(window.monitorStableId))
+        if (auto active = workspaces_.GetActiveWorkspaceId(monitorId))
         {
-            return *active;
+            if (validTarget(*active))
+            {
+                return *active;
+            }
+        }
+        const auto monitorWorkspaces = workspaces_.GetWorkspacesForMonitor(monitorId);
+        if (!monitorWorkspaces.empty())
+        {
+            return monitorWorkspaces.front().id;
         }
         const auto all = workspaces_.GetWorkspaces();
         return all.empty() ? std::string{} : all.front().id;
@@ -848,9 +964,23 @@ namespace flowspace::engine
             ProcessMovedWindow(hwnd);
             break;
         case WindowEventType::Hidden:
+            // Nothing to do: hidden windows remain hidden.
+            break;
         case WindowEventType::Foreground:
-            // Nothing to do: hidden windows remain hidden; foreground changes don't affect
-            // workspace assignments.
+            // Track the last focused manageable window so "+ Add rule" can capture it
+            // even though clicking the button makes FlowSpace Settings the foreground window.
+            {
+                const auto discovered = windows_.DiscoverWindows(
+                    platform::WindowDiscoveryOptions{.includeUnmanageableInReport = false});
+                for (const auto &win : discovered)
+                {
+                    if (win.hwnd == hwnd)
+                    {
+                        lastFocusedWindowInfo_ = win;
+                        break;
+                    }
+                }
+            }
             break;
         }
     }
@@ -907,6 +1037,16 @@ namespace flowspace::engine
         return workspaces_.GetWorkspaces();
     }
 
+    std::vector<core::Workspace> WorkspaceEngine::GetWorkspacesForMonitor(const std::wstring &monitorStableId) const
+    {
+        return workspaces_.GetWorkspacesForMonitor(monitorStableId);
+    }
+
+    void WorkspaceEngine::PersistWorkspacesToConfig()
+    {
+        config_.Get().workspaces = workspaces_.GetWorkspaces();
+    }
+
     core::Workspace &WorkspaceEngine::WorkspaceAt(size_t index)
     {
         auto all = workspaces_.GetWorkspaces();
@@ -954,13 +1094,34 @@ namespace flowspace::engine
         return windows_.GetForegroundWindow();
     }
 
-    std::string WorkspaceEngine::CreateWorkspace(const std::string &name)
+    std::optional<core::WindowInfo> WorkspaceEngine::GetLastFocusedWindowInfo() const
     {
-        auto created = workspaces_.CreateWorkspace(name.empty() ? "Workspace" : name);
+        return lastFocusedWindowInfo_;
+    }
+
+    std::optional<std::string> WorkspaceEngine::GetActiveWorkspaceId(const std::wstring &monitorStableId) const
+    {
+        return workspaces_.GetActiveWorkspaceId(monitorStableId);
+    }
+
+    void WorkspaceEngine::CaptureForegroundWindowInfo()
+    {
+        lastFocusedWindowInfo_ = windows_.GetForegroundWindow();
+        spdlog::info("Captured foreground for rule: hwnd=0x{:08X} exe='{}'",
+                     reinterpret_cast<uintptr_t>(lastFocusedWindowInfo_->hwnd),
+                     std::string(lastFocusedWindowInfo_->executableName.begin(),
+                                 lastFocusedWindowInfo_->executableName.end()));
+    }
+
+    std::string WorkspaceEngine::CreateWorkspace(const std::string &name, const std::wstring &monitorStableId)
+    {
+        auto created = workspaces_.CreateWorkspace(name.empty() ? "Workspace" : name, monitorStableId);
         if (OnStateChanged)
         {
             OnStateChanged();
         }
+        PersistWorkspacesToConfig();
+        config_.Save();
         return created.id;
     }
 
@@ -976,6 +1137,8 @@ namespace flowspace::engine
         {
             OnStateChanged();
         }
+        PersistWorkspacesToConfig();
+        config_.Save();
     }
 
     void WorkspaceEngine::DuplicateWorkspaceIndex(int index)
@@ -990,6 +1153,8 @@ namespace flowspace::engine
         {
             OnStateChanged();
         }
+        PersistWorkspacesToConfig();
+        config_.Save();
     }
 
     void WorkspaceEngine::ResetWorkspaceIndex(int index)
@@ -1004,18 +1169,26 @@ namespace flowspace::engine
         {
             OnStateChanged();
         }
+        PersistWorkspacesToConfig();
+        config_.Save();
     }
 
     void WorkspaceEngine::DeleteWorkspaceIndex(int index)
     {
         const auto all = workspaces_.GetWorkspaces();
-        if (index < 0 || index >= static_cast<int>(all.size()) || all.size() <= 1)
+        if (index < 0 || index >= static_cast<int>(all.size()))
         {
-            return; // never delete the last workspace
+            return;
         }
-        const std::string deletedId = all[index].id;
+        const std::string deletedId = all[static_cast<size_t>(index)].id;
+        const std::wstring ownerMonitor = all[static_cast<size_t>(index)].monitorStableId;
+        const auto siblings = workspaces_.GetWorkspacesForMonitor(ownerMonitor);
+        if (siblings.size() <= 1)
+        {
+            return; // never delete a monitor's last workspace
+        }
         std::string fallback;
-        for (const auto &ws : all)
+        for (const auto &ws : siblings)
         {
             if (ws.id != deletedId)
             {
@@ -1028,29 +1201,18 @@ namespace flowspace::engine
         {
             OnStateChanged();
         }
-    }
-
-    void WorkspaceEngine::SetWorkspaceWallpaperIndex(int index, const std::wstring &imagePath)
-    {
-        auto &ws = WorkspaceAt(static_cast<size_t>(index));
-        if (!ws.id.empty())
-        {
-            ws.defaultWallpaperPath = imagePath;
-            if (OnStateChanged)
-            {
-                OnStateChanged();
-            }
-        }
+        PersistWorkspacesToConfig();
+        config_.Save();
     }
 
     void WorkspaceEngine::SwitchMonitorToWorkspaceIndex(int monitorIndex, int workspaceIndex)
     {
         const auto monitors = monitors_.EnumerateMonitors();
-        const auto workspaces = workspaces_.GetWorkspaces();
         if (monitorIndex < 0 || monitorIndex >= static_cast<int>(monitors.size()))
         {
             return;
         }
+        const auto workspaces = workspaces_.GetWorkspacesForMonitor(monitors[monitorIndex].stableId);
         if (workspaceIndex < 0 || workspaceIndex >= static_cast<int>(workspaces.size()))
         {
             return;
@@ -1087,81 +1249,6 @@ namespace flowspace::engine
                 OnStateChanged();
             }
             return;
-        }
-    }
-
-    void WorkspaceEngine::RestoreOriginalWallpaperForMonitorIndex(int monitorIndex)
-    {
-        const auto monitors = monitors_.EnumerateMonitors();
-        if (monitorIndex < 0 || monitorIndex >= static_cast<int>(monitors.size()) || !wallpaper_.IsAvailable())
-        {
-            return;
-        }
-        const std::wstring &stableId = monitors[monitorIndex].stableId;
-        for (const auto &w : config_.Get().originalWallpapers)
-        {
-            if (w.monitorDevicePath == stableId)
-            {
-                wallpaper_.SetWallpaper(stableId, w.imagePath);
-                (void)wallpaper_.SetBackgroundColor(static_cast<COLORREF>(w.backgroundColor));
-                (void)wallpaper_.SetPosition(static_cast<platform::WallpaperPosition>(w.fit));
-                spdlog::info("Restored original wallpaper for monitor index {}", monitorIndex);
-                return;
-            }
-        }
-    }
-
-    void WorkspaceEngine::ApplyWallpaperForMonitor(const std::wstring &monitorStableId)
-    {
-        if (!config_.Get().settings.wallpaperManagementEnabled || config_.Get().settings.paused)
-        {
-            return;
-        }
-        if (!wallpaper_.IsAvailable() || monitorStableId.empty())
-        {
-            return;
-        }
-        const auto active = workspaces_.GetActiveWorkspaceId(monitorStableId);
-        if (!active.has_value())
-        {
-            return;
-        }
-        const auto ws = workspaces_.GetWorkspace(*active);
-        if (!ws.has_value())
-        {
-            return;
-        }
-
-        // Per-monitor override wins over the workspace default.
-        std::wstring imagePath = ws->defaultWallpaperPath;
-        int32_t fit = ws->wallpaperFit;
-        if (auto it = ws->perMonitorWallpaper.find(monitorStableId); it != ws->perMonitorWallpaper.end())
-        {
-            imagePath = it->second;
-            if (auto fitIt = ws->perMonitorWallpaperFit.find(monitorStableId); fitIt != ws->perMonitorWallpaperFit.end())
-            {
-                fit = fitIt->second;
-            }
-        }
-
-        if (imagePath.empty())
-        {
-            return; // no wallpaper configured for this workspace: keep the current desktop
-        }
-        if (!fs::exists(fs::path(imagePath)))
-        {
-            spdlog::warn("Wallpaper file missing: {}", Narrow(imagePath));
-            return;
-        }
-
-        // Note: IDesktopWallpaper::SetPosition is global (affects every monitor).
-        // It is intentionally NOT called here so that applying one monitor's
-        // wallpaper does not change another monitor's position. Position is a
-        // per-desktop setting, not per-monitor.
-        if (wallpaper_.SetWallpaper(monitorStableId, imagePath))
-        {
-            spdlog::info("Wallpaper applied: monitor '{}' -> '{}' (fit={})",
-                         Narrow(monitorStableId), Narrow(imagePath), fit);
         }
     }
 }

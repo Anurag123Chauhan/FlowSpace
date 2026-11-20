@@ -110,9 +110,9 @@ namespace
         const auto status = config.Load();
         CHECK(status == flowspace::core::ConfigLoadStatus::FreshDefaults);
         const auto &c = config.Get();
-        CHECK(c.workspaces.size() >= 4);
+        CHECK(c.workspaces.size() >= 1);
         CHECK(c.hotkeys.size() >= 6);
-        CHECK(c.schemaVersion == 1);
+        CHECK(c.schemaVersion == 2);
         for (size_t i = 0; i < c.workspaces.size(); ++i)
         {
             CHECK_EQ(c.workspaces[i].orderIndex, static_cast<int32_t>(i));
@@ -127,7 +127,8 @@ namespace
             config.Load();
             config.Get().workspaces.push_back(flowspace::core::Workspace{
                 .id = "ws-custom", .name = "Καλημέρα", .icon = "gamepad",
-                .accentColor = "#E5534B", .orderIndex = 90});
+                .accentColor = "#E5534B", .orderIndex = 90,
+                .monitorStableId = L"\\\\?\\DISPLAY#TEST#1"});
             config.Get().settings.hideMode = flowspace::core::HideMode::Minimize;
             config.Get().settings.overlayAnimationMs = 250;
             config.Get().appRules.push_back(flowspace::core::AppRule{
@@ -144,7 +145,8 @@ namespace
             const bool foundCustom = std::any_of(c.workspaces.begin(), c.workspaces.end(),
                                                  [](const auto &ws)
                                                  { return ws.id == "ws-custom" && ws.name == "Καλημέρα"
-                                                              && ws.accentColor == "#E5534B"; });
+                                                              && ws.accentColor == "#E5534B"
+                                                              && ws.monitorStableId == L"\\\\?\\DISPLAY#TEST#1"; });
             CHECK(foundCustom);
             CHECK(c.settings.hideMode == flowspace::core::HideMode::Minimize);
             CHECK(c.settings.overlayAnimationMs == 250);
@@ -191,7 +193,7 @@ namespace
         flowspace::core::ConfigService config(dir.File(L"config.json"), dir.File(L"config.backup.json"));
         const auto status = config.Load();
         CHECK(status == flowspace::core::ConfigLoadStatus::FreshDefaults);
-        CHECK(config.Get().workspaces.size() >= 4);
+        CHECK(config.Get().workspaces.size() >= 1);
     }
 
     void TestConfigMigrationV0()
@@ -214,10 +216,67 @@ namespace
         const auto status = config.Load();
         CHECK(status == flowspace::core::ConfigLoadStatus::Loaded);
         const auto &c = config.Get();
-        CHECK(c.schemaVersion == 1); // migrated
+        CHECK(c.schemaVersion == 2); // migrated
         CHECK(c.workspaces.size() == 2);
         CHECK(c.hotkeys.size() >= 6); // defaults attached by migration
         CHECK(c.workspaces[0].name == "Work");
+    }
+
+    void TestConfigMigratePerMonitor()
+    {
+        TempDir dir("migrate2");
+        // v1: one global workspace list shared by two monitors. Each monitor's active
+        // workspace must be remapped onto its own cloned list.
+        const char *v1 =
+            "{\n"
+            "  \"schemaVersion\": 1,\n"
+            "  \"settings\": {\"wallpaperManagementEnabled\": true},\n"
+            "  \"workspaces\": [\n"
+            "    {\"id\": \"ws-1\", \"name\": \"Work\", \"orderIndex\": 0},\n"
+            "    {\"id\": \"ws-2\", \"name\": \"Home\", \"orderIndex\": 1}\n"
+            "  ],\n"
+            "  \"monitorState\": {\n"
+            "    \"MON-A\": \"ws-1\",\n"
+            "    \"MON-B\": \"ws-2\"\n"
+            "  }\n"
+            "}\n";
+        FILE *f = _wfopen(dir.File(L"config.json").c_str(), L"wb");
+        fwrite(v1, 1, strlen(v1), f);
+        fclose(f);
+
+        flowspace::core::ConfigService config(dir.File(L"config.json"), dir.File(L"config.backup.json"));
+        const auto status = config.Load();
+        CHECK(status == flowspace::core::ConfigLoadStatus::Loaded);
+        const auto &c = config.Get();
+        CHECK(c.schemaVersion == 2);
+        CHECK_EQ(c.workspaces.size(), 4u); // two originals + two clones
+
+        auto forMonitor = [&](const std::wstring &monitorId)
+        {
+            std::vector<const flowspace::core::Workspace *> list;
+            for (const auto &ws : c.workspaces)
+            {
+                if (ws.monitorStableId == monitorId)
+                {
+                    list.push_back(&ws);
+                }
+            }
+            std::sort(list.begin(), list.end(), [](const auto *a, const auto *b)
+                      { return a->orderIndex < b->orderIndex; });
+            return list;
+        };
+
+        const auto listA = forMonitor(L"MON-A");
+        const auto listB = forMonitor(L"MON-B");
+        CHECK_EQ(listA.size(), 2u);
+        CHECK_EQ(listB.size(), 2u);
+        CHECK(listA[0]->id != listB[0]->id);
+        CHECK(listA[0]->name == "Work" && listB[0]->name == "Work");
+        CHECK(listA[1]->name == "Home" && listB[1]->name == "Home");
+
+        // Active workspace references point at each monitor's own list, not the originals.
+        CHECK(c.monitorState.at(L"MON-A") == listA[0]->id);
+        CHECK(c.monitorState.at(L"MON-B") == listB[1]->id);
     }
 
     void TestConfigNormalize()
@@ -243,7 +302,7 @@ namespace
         const auto &fixed = svc.Get();
         // Exactly one "dup" survives; the id-less workspace gets one.
         CHECK(fixed.workspaces.size() == 2);
-        CHECK(fixed.workspaces[0].accentColor == "#4389D8"); // invalid color repaired
+        CHECK(fixed.workspaces[0].accentColor == "#A87E5A"); // invalid color repaired
         for (size_t i = 0; i < fixed.workspaces.size(); ++i)
         {
             CHECK_EQ(fixed.workspaces[i].orderIndex, static_cast<int32_t>(i));
@@ -319,52 +378,123 @@ namespace
     {
         flowspace::core::WorkspaceManager wm;
         wm.InitializeDefaultWorkspaces();
-        const size_t initial = wm.GetWorkspaces().size();
-        CHECK(initial >= 4);
 
-        // Create.
-        auto created = wm.CreateWorkspace("Testing");
+        flowspace::core::MonitorInfo monitor;
+        monitor.stableId = L"\\\\?\\DISPLAY#A#1";
+        monitor.isPrimary = true;
+        monitor.isConnected = true;
+        wm.ReconcileMonitors({monitor});
+
+        // Legacy unassigned defaults are adopted by the first monitor.
+        const auto initialList = wm.GetWorkspacesForMonitor(monitor.stableId);
+        CHECK(initialList.size() >= 1);
+        CHECK(initialList.front().monitorStableId == monitor.stableId);
+
+        // Create on this monitor.
+        auto created = wm.CreateWorkspace("Testing", monitor.stableId);
         CHECK(!created.id.empty());
-        CHECK_EQ(wm.GetWorkspaces().size(), initial + 1);
+        CHECK(created.monitorStableId == monitor.stableId);
+        CHECK_EQ(wm.GetWorkspacesForMonitor(monitor.stableId).size(), initialList.size() + 1);
         CHECK(wm.GetWorkspace(created.id).has_value());
 
         // Rename.
         CHECK(wm.RenameWorkspace(created.id, "Renamed"));
         CHECK(wm.GetWorkspace(created.id)->name == "Renamed");
-        // Order indexes stay contiguous.
-        const auto all = wm.GetWorkspaces();
+        // Order indexes stay contiguous inside the monitor's own list.
+        const auto all = wm.GetWorkspacesForMonitor(monitor.stableId);
         for (size_t i = 0; i < all.size(); ++i)
         {
             CHECK_EQ(all[i].orderIndex, static_cast<int32_t>(i));
         }
 
-        // Duplicate: copy lands after the original with suffix.
+        // Duplicate: copy lands after the original in the same monitor's list.
         auto dupId = wm.DuplicateWorkspace(created.id);
         CHECK(dupId.has_value() && *dupId != created.id);
         const auto dup = wm.GetWorkspace(*dupId);
         CHECK(dup.has_value());
+        CHECK(dup->monitorStableId == monitor.stableId);
         CHECK(dup->accentColor == wm.GetWorkspace(created.id)->accentColor);
 
-        // Reset clears appearance but keeps identity/name/windows.
+        // Reset clears appearance but keeps identity/name/owner.
         CHECK(wm.ResetWorkspace(created.id));
         const auto reset = wm.GetWorkspace(created.id);
         CHECK(reset.has_value() && reset->name == "Renamed");
-        CHECK(reset->defaultWallpaperPath.empty());
+        CHECK(reset->monitorStableId == monitor.stableId);
 
         // Delete renumbers; deleting the unknown fails.
         CHECK(wm.DeleteWorkspace(*dupId, all.front().id));
-        CHECK_EQ(wm.GetWorkspaces().size(), initial + 1);
+        CHECK_EQ(wm.GetWorkspacesForMonitor(monitor.stableId).size(), initialList.size() + 1);
         CHECK(!wm.DeleteWorkspace("does-not-exist", all.front().id));
         CHECK(!wm.GetWorkspace(*dupId).has_value());
 
-        // Reorder.
-        const auto &list = wm.GetWorkspaces();
+        // Reorder within the monitor's list.
+        const auto list = wm.GetWorkspacesForMonitor(monitor.stableId);
         if (list.size() >= 2)
         {
             CHECK(wm.ReorderWorkspace(list.back().id, 0));
-            const auto reordered = wm.GetWorkspaces();
+            const auto reordered = wm.GetWorkspacesForMonitor(monitor.stableId);
             CHECK_EQ(reordered.front().id, list.back().id);
         }
+
+        // A monitor's last workspace can never be deleted.
+        while (wm.GetWorkspacesForMonitor(monitor.stableId).size() > 1)
+        {
+            const auto current = wm.GetWorkspacesForMonitor(monitor.stableId);
+            CHECK(wm.DeleteWorkspace(current.front().id, current[1].id));
+        }
+        const auto last = wm.GetWorkspacesForMonitor(monitor.stableId);
+        CHECK_EQ(last.size(), 1);
+        CHECK(!wm.DeleteWorkspace(last.front().id, last.front().id));
+        CHECK_EQ(wm.GetWorkspacesForMonitor(monitor.stableId).size(), 1);
+    }
+
+    void TestPerMonitorWorkspaceIsolation()
+    {
+        flowspace::core::WorkspaceManager wm;
+        wm.InitializeDefaultWorkspaces();
+
+        std::vector<flowspace::core::MonitorInfo> monitors(2);
+        monitors[0].stableId = L"\\\\?\\DISPLAY#A#1";
+        monitors[0].isPrimary = true;
+        monitors[1].stableId = L"\\\\?\\DISPLAY#B#2";
+        wm.ReconcileMonitors(monitors);
+
+        auto listA = wm.GetWorkspacesForMonitor(monitors[0].stableId);
+        auto listB = wm.GetWorkspacesForMonitor(monitors[1].stableId);
+        CHECK(!listA.empty());
+        CHECK(!listB.empty());
+        // The second monitor receives its own clone of the list, not shared ids.
+        CHECK_EQ(listA.size(), listB.size());
+        CHECK(listA.front().id != listB.front().id);
+
+        // Give the monitors different workspace counts, as per-monitor lists allow.
+        wm.CreateWorkspace("A only 1", monitors[0].stableId);
+        wm.CreateWorkspace("A only 2", monitors[0].stableId);
+        wm.CreateWorkspace("B only 1", monitors[1].stableId);
+        listA = wm.GetWorkspacesForMonitor(monitors[0].stableId);
+        listB = wm.GetWorkspacesForMonitor(monitors[1].stableId);
+        CHECK_EQ(listA.size(), listB.size() + 1);
+
+        // Switching/numbering never leaves the monitor's own list.
+        CHECK(wm.SetActiveWorkspace(monitors[0].stableId, listA[0].id));
+        CHECK(wm.SetActiveWorkspace(monitors[1].stableId, listB.back().id));
+        CHECK(!wm.SetActiveWorkspace(monitors[0].stableId, listB.front().id));
+        CHECK(!wm.SetActiveWorkspace(monitors[1].stableId, listA.front().id));
+
+        CHECK(wm.ResolveAdjacentWorkspaceId(monitors[0].stableId,
+                                            flowspace::core::WorkspaceSwitchDirection::Next)
+              == std::optional<std::string>(listA[1].id));
+        CHECK(wm.ResolveAdjacentWorkspaceId(monitors[1].stableId,
+                                            flowspace::core::WorkspaceSwitchDirection::Next)
+              == std::optional<std::string>(listB.front().id));
+
+        // Numbers are 1-based and monitor-local.
+        CHECK(wm.GetWorkspaceNumber(monitors[0].stableId, listA[2].id) == std::optional<int>(3));
+        CHECK(wm.GetWorkspaceNumber(monitors[1].stableId, listA[2].id) == std::nullopt);
+
+        // Deleting a workspace can only use a fallback from the same monitor.
+        CHECK(!wm.DeleteWorkspace(listA.front().id, listB.front().id));
+        CHECK(!wm.DeleteWorkspace(listB.front().id, listA.front().id));
     }
 
     void TestWorkspaceMonitorStateAndAdjacency()
@@ -378,26 +508,45 @@ namespace
         monitors[1].stableId = L"\\\\?\\DISPLAY#B#2";
         wm.ReconcileMonitors(monitors);
 
-        // Fresh monitors get no active workspace until set.
-        CHECK(wm.SetActiveWorkspace(monitors[0].stableId, "ws-1"));
-        CHECK(wm.SetActiveWorkspace(monitors[1].stableId, "ws-2"));
-        CHECK(wm.GetActiveWorkspaceId(monitors[0].stableId) == std::optional<std::string>("ws-1"));
-        CHECK(wm.GetActiveWorkspaceId(monitors[1].stableId) == std::optional<std::string>("ws-2"));
+        const auto listA = wm.GetWorkspacesForMonitor(monitors[0].stableId);
+        const auto listB = wm.GetWorkspacesForMonitor(monitors[1].stableId);
+        CHECK(!listA.empty());
+        CHECK(!listB.empty());
+
+        // Create extra workspaces so each monitor has at least 2 for adjacency tests.
+        wm.CreateWorkspace("A-extra", monitors[0].stableId);
+        wm.CreateWorkspace("B-extra", monitors[1].stableId);
+        const auto listA2 = wm.GetWorkspacesForMonitor(monitors[0].stableId);
+        const auto listB2 = wm.GetWorkspacesForMonitor(monitors[1].stableId);
+        CHECK(listA2.size() >= 2);
+        CHECK(listB2.size() >= 2);
+
+        CHECK(wm.SetActiveWorkspace(monitors[0].stableId, listA2[0].id));
+        CHECK(wm.SetActiveWorkspace(monitors[1].stableId, listB2[1].id));
+        CHECK(wm.GetActiveWorkspaceId(monitors[0].stableId) == std::optional<std::string>(listA2[0].id));
+        CHECK(wm.GetActiveWorkspaceId(monitors[1].stableId) == std::optional<std::string>(listB2[1].id));
         CHECK(!wm.GetActiveWorkspaceId(L"unknown-monitor").has_value());
         CHECK(!wm.SetActiveWorkspace(monitors[0].stableId, "ghost"));
 
-        // Adjacent resolution wraps around the list.
-        const auto all = wm.GetWorkspaces();
+        // Adjacent resolution wraps around the monitor's own list.
         CHECK(wm.ResolveAdjacentWorkspaceId(monitors[0].stableId, flowspace::core::WorkspaceSwitchDirection::Next)
-                  == std::optional<std::string>(all[1].id));
+                  == std::optional<std::string>(listA2[1].id));
         CHECK(wm.ResolveAdjacentWorkspaceId(monitors[0].stableId, flowspace::core::WorkspaceSwitchDirection::Previous)
-                  == std::optional<std::string>(all.back().id));
+                  == std::optional<std::string>(listA2.back().id));
 
-        // Reconcile with a disconnected monitor keeps state per monitor.
+        // Reconcile with a disconnected monitor keeps per-monitor state.
         std::vector<flowspace::core::MonitorInfo> onlyPrimary(1);
         onlyPrimary[0].stableId = monitors[0].stableId;
         wm.ReconcileMonitors(onlyPrimary);
-        CHECK(wm.GetActiveWorkspaceId(monitors[0].stableId) == std::optional<std::string>("ws-1"));
+        CHECK(wm.GetActiveWorkspaceId(monitors[0].stableId) == std::optional<std::string>(listA2[0].id));
+        CHECK(wm.GetActiveWorkspaceId(monitors[1].stableId) == std::optional<std::string>(listB2[1].id));
+        CHECK(wm.GetMonitor(monitors[1].stableId).has_value());
+        CHECK(!wm.GetMonitor(monitors[1].stableId)->isConnected);
+
+        // Reconnecting restores the same list and active workspace.
+        wm.ReconcileMonitors(monitors);
+        CHECK(wm.GetWorkspacesForMonitor(monitors[1].stableId).size() == listB2.size());
+        CHECK(wm.GetActiveWorkspaceId(monitors[1].stableId) == std::optional<std::string>(listB2[1].id));
     }
 
     void TestWorkspaceWindowAssignment()
@@ -405,10 +554,25 @@ namespace
         flowspace::core::WorkspaceManager wm;
         wm.InitializeDefaultWorkspaces();
 
-        std::vector<flowspace::core::MonitorInfo> monitors(1);
+        std::vector<flowspace::core::MonitorInfo> monitors(2);
         monitors[0].stableId = L"\\\\?\\DISPLAY#A#1";
+        monitors[0].isPrimary = true;
+        monitors[1].stableId = L"\\\\?\\DISPLAY#B#2";
         wm.ReconcileMonitors(monitors);
-        (void)wm.SetActiveWorkspace(monitors[0].stableId, "ws-1");
+
+        const auto listA = wm.GetWorkspacesForMonitor(monitors[0].stableId);
+        const auto listB = wm.GetWorkspacesForMonitor(monitors[1].stableId);
+
+        // Create extra workspaces so each monitor has at least 2 for assignment tests.
+        wm.CreateWorkspace("A-extra", monitors[0].stableId);
+        wm.CreateWorkspace("B-extra", monitors[1].stableId);
+        const auto listA2 = wm.GetWorkspacesForMonitor(monitors[0].stableId);
+        const auto listB2 = wm.GetWorkspacesForMonitor(monitors[1].stableId);
+        CHECK(listA2.size() >= 2);
+        CHECK(listB2.size() >= 2);
+
+        wm.SetActiveWorkspace(monitors[0].stableId, listA2[0].id);
+        wm.SetActiveWorkspace(monitors[1].stableId, listB2[0].id);
 
         flowspace::core::WindowInfo win;
         win.hwnd = reinterpret_cast<HWND>(0xABCDEF);
@@ -420,25 +584,36 @@ namespace
         wm.SyncDiscoveredWindows({win});
         CHECK(wm.GetTrackedWindows().size() == 1);
         // Unassigned windows default to the active workspace of their monitor.
-        CHECK(wm.GetTrackedWindows().front().assignedWorkspaceId == "ws-1");
+        CHECK(wm.GetTrackedWindows().front().assignedWorkspaceId == listA2[0].id);
 
-        // Explicit assignment + lookup + forget.
-        CHECK(wm.AssignWindowToWorkspace(win.hwnd, "ws-2", monitors[0].stableId));
+        // Explicit assignment within the same monitor + lookup + forget.
+        CHECK(wm.AssignWindowToWorkspace(win.hwnd, listA2[1].id, monitors[0].stableId));
         CHECK(wm.GetWindow(win.hwnd).has_value());
-        CHECK(wm.GetWindow(win.hwnd)->assignedWorkspaceId == "ws-2");
+        CHECK(wm.GetWindow(win.hwnd)->assignedWorkspaceId == listA2[1].id);
+
+        // Cross-monitor assignment is refused.
+        CHECK(!wm.AssignWindowToWorkspace(win.hwnd, listB2[1].id, monitors[0].stableId));
 
         wm.SetWindowState(win.hwnd, flowspace::core::WindowVisibilityState::HiddenByFlowSpace);
         CHECK(wm.GetWindow(win.hwnd)->visibilityState == flowspace::core::WindowVisibilityState::HiddenByFlowSpace);
+
+        // Moving the window to the other display reassigns it to that monitor's active workspace.
+        flowspace::core::WindowInfo moved = win;
+        moved.monitorStableId = monitors[1].stableId;
+        moved.visibilityState = flowspace::core::WindowVisibilityState::Visible;
+        wm.SyncDiscoveredWindows({moved});
+        CHECK(wm.GetWindow(win.hwnd)->monitorStableId == monitors[1].stableId);
+        CHECK(wm.GetWindow(win.hwnd)->assignedWorkspaceId == listB2[0].id);
 
         wm.ForgetWindow(win.hwnd);
         CHECK(!wm.GetWindow(win.hwnd).has_value());
         CHECK(wm.GetTrackedWindows().empty());
 
         // Assignment to a nonexistent workspace fails.
-        flowspace::core::WindowInfo win2 = win;
+        flowspace::core::WindowInfo win2 = moved;
         win2.hwnd = reinterpret_cast<HWND>(0xFEED);
         wm.SyncDiscoveredWindows({win2});
-        CHECK(!wm.AssignWindowToWorkspace(win2.hwnd, "ghost", monitors[0].stableId));
+        CHECK(!wm.AssignWindowToWorkspace(win2.hwnd, "ghost", monitors[1].stableId));
     }
 
     // --------------------------------------------------------------- HotkeyManager
@@ -512,10 +687,12 @@ int main()
     TestConfigCorruptRecovery();
     TestConfigAllCorruptFallsBackToDefaults();
     TestConfigMigrationV0();
+    TestConfigMigratePerMonitor();
     TestConfigNormalize();
     TestRecoveryRoundTrip();
     TestRecoveryCorruptJournalIsFailSafe();
     TestWorkspaceCrud();
+    TestPerMonitorWorkspaceIsolation();
     TestWorkspaceMonitorStateAndAdjacency();
     TestWorkspaceWindowAssignment();
     TestHotkeyParsing();

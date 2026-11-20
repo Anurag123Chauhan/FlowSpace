@@ -5,7 +5,7 @@ lags one save cycle. Delete both to regenerate defaults.
 
 ```jsonc
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "settings": {
     "hideMode": 0,                      // 0 = SW_HIDE, 1 = minimize
     "showOverlay": true,                // compact switch notification after a workspace change
@@ -23,8 +23,9 @@ lags one save cycle. Delete both to regenerate defaults.
       "id": "ws-1",                     // stable, never user-visible
       "name": "Work",
       "icon": "briefcase",              // icon key used by tray/switcher
-      "accentColor": "#4389D8",         // RRGGBB; shown in UI accents
-      "orderIndex": 0,
+      "accentColor": "#A87E5A",         // RRGGBB; shown in UI accents
+      "orderIndex": 0,                  // position within the owning monitor's list
+      "monitor": "\\\\?\\DISPLAY#...",  // stable ID of the owning monitor (empty = unassigned legacy)
       "defaultWallpaperPath": "",       // empty = leave the monitor's wallpaper alone
       "wallpaperFit": 3,                // IDesktopWallpaper fit (3 = fill)
       "wallpaperBackgroundColor": "#000000",
@@ -108,6 +109,15 @@ PageDown, OemComma, OemPeriod, Minus, Plus, A-Z`. Modifier names: `Ctrl` (or `Co
 `schemaVersion` < 1 (diagnostic-era config) is migrated: default names/hotkeys attached,
 schema stamped to 1. Unknown fields are ignored; new fields default.
 
+`schemaVersion` 1 → 2 (per-monitor workspaces): legacy configs had one global workspace list
+shared by every display. The migration picks a "legacy owner" monitor (the first monitor known
+from `monitorState`/`originalWallpapers`), assigns all unassigned workspaces to it, then clones
+that monitor's workspace set for every other known monitor with fresh IDs. Each monitor's
+`monitorState` active-workspace reference is remapped onto its own clone (by list position,
+or directly by ID when already owned). If no monitor hints exist, workspaces stay unassigned
+and `WorkspaceManager::ReconcileMonitors` adopts them for the first display detected at
+runtime.
+
 ## Load statuses (`ConfigLoadStatus`)
 
 - `Loaded` — parsed successfully
@@ -117,7 +127,8 @@ schema stamped to 1. Unknown fields are ignored; new fields default.
 ## Normalization (runs after every load)
 
 - Every workspace gets an id; exact-duplicate ids dropped; `orderIndex` renumbered contiguously
-- Invalid accent colors repaired to `#4389D8`; dangling `monitorState` references dropped
-- Non-existent wallpaper image paths cleared
-- `overlayAnimationMs` clamped to 0-2000
-- Hotkey entries without a key are dropped
+  per owning monitor (not globally); invalid accent colors repaired to `#A87E5A`; dangling
+  `monitorState` references dropped; `monitor` references that point to a workspace owned by
+  another monitor are repaired by list position; non-existent wallpaper image paths cleared.
+- `overlayAnimationMs` clamped to 0-2000.
+- Hotkey entries without a key are dropped.

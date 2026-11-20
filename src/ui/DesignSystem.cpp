@@ -268,7 +268,7 @@ namespace flowspace::ui
         {
             return RGB((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
         }
-        return RGB(87, 155, 255);
+        return RGB(168, 126, 90);
     }
 
     // ===========================================================================
@@ -462,8 +462,8 @@ namespace flowspace::ui
             const int ox = rect.left + (w - s) / 2;
             const int oy = rect.top + (h - s) / 2;
 
-            const COLORREF blue = RGB(67, 137, 216);
-            const COLORREF front = RGB(250, 251, 253);
+            const COLORREF back = theme.Tokens().accent;
+            const COLORREF front = RGB(250, 246, 242); // warm off-white foreground
 
             // Fractions match the 256 px source artwork in scripts/make-icon.ps1.
             auto square = [&](double fx1, double fy1, double fx2, double fy2, double fr,
@@ -474,9 +474,9 @@ namespace flowspace::ui
                 const int radius = std::max(2, static_cast<int>(fr * s));
                 Draw::RoundRect(dc, r, radius, fill, border, 1);
             };
-            square(0.133, 0.211, 0.867, 0.867, 0.086, blue, blue);  // back square
+            square(0.133, 0.211, 0.867, 0.867, 0.086, back, back);  // back square
             square(0.250, 0.133, 0.984, 0.766, 0.086, front, theme.Tokens().border); // front square
-            square(0.641, 0.641, 0.758, 0.758, 0.031, blue, blue);  // accent dot
+            square(0.641, 0.641, 0.758, 0.758, 0.031, back, back);  // accent dot
         }
 
         void Divider(HDC dc, const RECT &rect, const AppTheme &theme)
