@@ -10,7 +10,8 @@ namespace flowspace::core
     namespace
     {
 
-        std::vector<Workspace *> SortedWorkspacesForMonitor(std::vector<Workspace> &list, const std::wstring &monitorStableId)
+        std::vector<Workspace *> SortedWorkspacesForMonitor(std::vector<Workspace> &list,
+                                                            const std::wstring &monitorStableId)
         {
             std::vector<Workspace *> result;
             for (auto &ws : list)
@@ -20,12 +21,13 @@ namespace flowspace::core
                     result.push_back(&ws);
                 }
             }
-            std::stable_sort(result.begin(), result.end(), [](const Workspace *a, const Workspace *b)
-                             { return a->orderIndex < b->orderIndex; });
+            std::stable_sort(result.begin(), result.end(),
+                             [](const Workspace *a, const Workspace *b) { return a->orderIndex < b->orderIndex; });
             return result;
         }
 
-        std::vector<Workspace> CopyWorkspacesForMonitor(const std::vector<Workspace> &list, const std::wstring &monitorStableId)
+        std::vector<Workspace> CopyWorkspacesForMonitor(const std::vector<Workspace> &list,
+                                                        const std::wstring &monitorStableId)
         {
             std::vector<Workspace> result;
             for (const auto &ws : list)
@@ -35,8 +37,8 @@ namespace flowspace::core
                     result.push_back(ws);
                 }
             }
-            std::stable_sort(result.begin(), result.end(), [](const Workspace &a, const Workspace &b)
-                             { return a.orderIndex < b.orderIndex; });
+            std::stable_sort(result.begin(), result.end(),
+                             [](const Workspace &a, const Workspace &b) { return a.orderIndex < b.orderIndex; });
             return result;
         }
 
@@ -50,8 +52,7 @@ namespace flowspace::core
     void WorkspaceManager::InitializeDefaultWorkspaces()
     {
         std::scoped_lock lock(mutex_);
-        auto make = [](std::string id, std::string name, std::string icon,
-                       std::string accentColor, int32_t orderIndex)
+        auto make = [](std::string id, std::string name, std::string icon, std::string accentColor, int32_t orderIndex)
         {
             Workspace ws;
             ws.id = std::move(id);
@@ -64,8 +65,7 @@ namespace flowspace::core
 
         // Unassigned on purpose: ReconcileMonitors adopts them for the first display and
         // clones the set for every additional monitor.
-        workspaces_ = {
-            make("ws-1", "Default WS", "grid", "#A87E5A", 0)};
+        workspaces_ = {make("ws-1", "Default WS", "grid", "#A87E5A", 0)};
     }
 
     void WorkspaceManager::LoadWorkspaces(std::vector<Workspace> workspaces)
@@ -124,8 +124,8 @@ namespace flowspace::core
                         unassigned.push_back(&ws);
                     }
                 }
-                std::stable_sort(unassigned.begin(), unassigned.end(), [](const Workspace *a, const Workspace *b)
-                                 { return a->orderIndex < b->orderIndex; });
+                std::stable_sort(unassigned.begin(), unassigned.end(),
+                                 [](const Workspace *a, const Workspace *b) { return a->orderIndex < b->orderIndex; });
                 int32_t nextOrder = 0;
                 for (auto *ws : unassigned)
                 {
@@ -145,8 +145,8 @@ namespace flowspace::core
                         {
                             continue;
                         }
-                        if (std::any_of(workspaces_.begin(), workspaces_.end(), [&](const Workspace &ws)
-                                        { return ws.monitorStableId == det.stableId; }))
+                        if (std::any_of(workspaces_.begin(), workspaces_.end(),
+                                        [&](const Workspace &ws) { return ws.monitorStableId == det.stableId; }))
                         {
                             source = &det;
                             break;
@@ -160,8 +160,8 @@ namespace flowspace::core
                             {
                                 continue;
                             }
-                            if (std::any_of(workspaces_.begin(), workspaces_.end(), [&](const Workspace &ws)
-                                            { return ws.monitorStableId == det.stableId; }))
+                            if (std::any_of(workspaces_.begin(), workspaces_.end(),
+                                            [&](const Workspace &ws) { return ws.monitorStableId == det.stableId; }))
                             {
                                 source = &det;
                                 break;
@@ -172,7 +172,8 @@ namespace flowspace::core
                     if (source)
                     {
                         const auto sourceActive = monitorsByStableId_[source->stableId].activeWorkspaceId;
-                        const std::string cloneActive = CloneWorkspaceSetUnlocked(source->stableId, monitorId, sourceActive);
+                        const std::string cloneActive =
+                            CloneWorkspaceSetUnlocked(source->stableId, monitorId, sourceActive);
                         if (!cloneActive.empty())
                         {
                             mon.activeWorkspaceId = cloneActive;
@@ -192,8 +193,7 @@ namespace flowspace::core
 
             RenumberMonitorWorkspacesUnlocked(monitorId);
 
-            if (mon.activeWorkspaceId.empty() ||
-                !WorkspaceBelongsToMonitorUnlocked(mon.activeWorkspaceId, monitorId))
+            if (mon.activeWorkspaceId.empty() || !WorkspaceBelongsToMonitorUnlocked(mon.activeWorkspaceId, monitorId))
             {
                 mon.activeWorkspaceId = FirstWorkspaceIdForMonitorUnlocked(monitorId);
             }
@@ -227,13 +227,15 @@ namespace flowspace::core
         std::scoped_lock lock(mutex_);
         std::vector<Workspace> result = workspaces_;
         // Group by owning monitor; a monitor's own orderIndex decides its internal order.
-        std::stable_sort(result.begin(), result.end(), [](const Workspace &a, const Workspace &b)
+        std::stable_sort(result.begin(), result.end(),
+                         [](const Workspace &a, const Workspace &b)
                          {
                              if (a.monitorStableId != b.monitorStableId)
                              {
                                  return a.monitorStableId < b.monitorStableId;
                              }
-                             return a.orderIndex < b.orderIndex; });
+                             return a.orderIndex < b.orderIndex;
+                         });
         return result;
     }
 
@@ -254,8 +256,8 @@ namespace flowspace::core
     std::optional<Workspace> WorkspaceManager::GetWorkspace(const std::string &workspaceId) const
     {
         std::scoped_lock lock(mutex_);
-        auto it = std::find_if(workspaces_.begin(), workspaces_.end(), [&](const Workspace &ws)
-                               { return ws.id == workspaceId; });
+        auto it = std::find_if(workspaces_.begin(), workspaces_.end(),
+                               [&](const Workspace &ws) { return ws.id == workspaceId; });
         if (it != workspaces_.end())
         {
             return *it;
@@ -263,7 +265,8 @@ namespace flowspace::core
         return std::nullopt;
     }
 
-    std::optional<int> WorkspaceManager::GetWorkspaceNumber(const std::wstring &monitorStableId, const std::string &workspaceId) const
+    std::optional<int> WorkspaceManager::GetWorkspaceNumber(const std::wstring &monitorStableId,
+                                                            const std::string &workspaceId) const
     {
         std::scoped_lock lock(mutex_);
         const auto list = CopyWorkspacesForMonitor(workspaces_, monitorStableId);
@@ -277,7 +280,8 @@ namespace flowspace::core
         return std::nullopt;
     }
 
-    Workspace WorkspaceManager::CreateWorkspace(std::string name, std::wstring monitorStableId, std::string icon, std::string accentColor)
+    Workspace WorkspaceManager::CreateWorkspace(std::string name, std::wstring monitorStableId, std::string icon,
+                                                std::string accentColor)
     {
         std::scoped_lock lock(mutex_);
         const auto siblings = SortedWorkspacesForMonitor(workspaces_, monitorStableId);
@@ -300,8 +304,8 @@ namespace flowspace::core
         }
 
         std::scoped_lock lock(mutex_);
-        auto it = std::find_if(workspaces_.begin(), workspaces_.end(), [&](const Workspace &ws)
-                               { return ws.id == workspaceId; });
+        auto it = std::find_if(workspaces_.begin(), workspaces_.end(),
+                               [&](const Workspace &ws) { return ws.id == workspaceId; });
         if (it == workspaces_.end())
         {
             return false;
@@ -314,8 +318,8 @@ namespace flowspace::core
     bool WorkspaceManager::ReorderWorkspace(const std::string &workspaceId, int32_t newOrderIndex)
     {
         std::scoped_lock lock(mutex_);
-        auto it = std::find_if(workspaces_.begin(), workspaces_.end(), [&](const Workspace &ws)
-                               { return ws.id == workspaceId; });
+        auto it = std::find_if(workspaces_.begin(), workspaces_.end(),
+                               [&](const Workspace &ws) { return ws.id == workspaceId; });
         if (it == workspaces_.end())
         {
             return false;
@@ -351,8 +355,8 @@ namespace flowspace::core
             return false;
         }
 
-        const auto targetIt = std::find_if(workspaces_.begin(), workspaces_.end(), [&](const Workspace &ws)
-                                           { return ws.id == workspaceId; });
+        const auto targetIt = std::find_if(workspaces_.begin(), workspaces_.end(),
+                                           [&](const Workspace &ws) { return ws.id == workspaceId; });
         if (targetIt == workspaces_.end())
         {
             return false;
@@ -364,8 +368,8 @@ namespace flowspace::core
         {
             return false; // never delete a monitor's last workspace
         }
-        const auto fallbackIt = std::find_if(workspaces_.begin(), workspaces_.end(), [&](const Workspace &ws)
-                                             { return ws.id == fallbackWorkspaceId; });
+        const auto fallbackIt = std::find_if(workspaces_.begin(), workspaces_.end(),
+                                             [&](const Workspace &ws) { return ws.id == fallbackWorkspaceId; });
         if (fallbackIt == workspaces_.end() || fallbackIt->monitorStableId != ownerMonitor)
         {
             return false;
@@ -398,8 +402,7 @@ namespace flowspace::core
     {
         std::scoped_lock lock(mutex_);
         auto it = std::find_if(workspaces_.begin(), workspaces_.end(),
-                               [&](const Workspace &ws)
-                               { return ws.id == workspaceId; });
+                               [&](const Workspace &ws) { return ws.id == workspaceId; });
         if (it == workspaces_.end())
         {
             return std::nullopt;
@@ -428,8 +431,7 @@ namespace flowspace::core
     {
         std::scoped_lock lock(mutex_);
         auto it = std::find_if(workspaces_.begin(), workspaces_.end(),
-                               [&](const Workspace &ws)
-                               { return ws.id == workspaceId; });
+                               [&](const Workspace &ws) { return ws.id == workspaceId; });
         if (it == workspaces_.end())
         {
             return false;
@@ -470,9 +472,8 @@ namespace flowspace::core
         return true;
     }
 
-    std::optional<std::string> WorkspaceManager::ResolveAdjacentWorkspaceId(
-        const std::wstring &monitorStableId,
-        WorkspaceSwitchDirection direction) const
+    std::optional<std::string> WorkspaceManager::ResolveAdjacentWorkspaceId(const std::wstring &monitorStableId,
+                                                                            WorkspaceSwitchDirection direction) const
     {
         std::scoped_lock lock(mutex_);
 
@@ -499,9 +500,8 @@ namespace flowspace::core
         }
 
         const size_t count = list.size();
-        const size_t nextIdx = (direction == WorkspaceSwitchDirection::Next)
-                                   ? (currentIdx + 1) % count
-                                   : (currentIdx + count - 1) % count;
+        const size_t nextIdx =
+            (direction == WorkspaceSwitchDirection::Next) ? (currentIdx + 1) % count : (currentIdx + count - 1) % count;
 
         return list[nextIdx].id;
     }
@@ -529,8 +529,7 @@ namespace flowspace::core
                 if (!win.monitorStableId.empty() &&
                     !WorkspaceBelongsToMonitorUnlocked(existingIt->second.assignedWorkspaceId, win.monitorStableId))
                 {
-                    existingIt->second.assignedWorkspaceId =
-                        ActiveOrDefaultWorkspaceIdUnlocked(win.monitorStableId);
+                    existingIt->second.assignedWorkspaceId = ActiveOrDefaultWorkspaceIdUnlocked(win.monitorStableId);
                 }
             }
             else
@@ -543,10 +542,8 @@ namespace flowspace::core
         }
     }
 
-    bool WorkspaceManager::AssignWindowToWorkspace(
-        HWND hwnd,
-        const std::string &workspaceId,
-        const std::wstring &monitorStableId)
+    bool WorkspaceManager::AssignWindowToWorkspace(HWND hwnd, const std::string &workspaceId,
+                                                   const std::wstring &monitorStableId)
     {
         std::scoped_lock lock(mutex_);
         auto winIt = trackedWindowsByHwnd_.find(hwnd);
@@ -555,8 +552,8 @@ namespace flowspace::core
             return false;
         }
 
-        auto wsIt = std::find_if(workspaces_.begin(), workspaces_.end(), [&](const Workspace &ws)
-                                 { return ws.id == workspaceId; });
+        auto wsIt = std::find_if(workspaces_.begin(), workspaces_.end(),
+                                 [&](const Workspace &ws) { return ws.id == workspaceId; });
         if (wsIt == workspaces_.end())
         {
             return false;
@@ -620,9 +617,8 @@ namespace flowspace::core
         return result;
     }
 
-    std::vector<WindowInfo> WorkspaceManager::GetWindowsForMonitorAndWorkspace(
-        const std::wstring &monitorStableId,
-        const std::string &workspaceId) const
+    std::vector<WindowInfo> WorkspaceManager::GetWindowsForMonitorAndWorkspace(const std::wstring &monitorStableId,
+                                                                               const std::string &workspaceId) const
     {
         std::scoped_lock lock(mutex_);
         std::vector<WindowInfo> result;
@@ -635,8 +631,6 @@ namespace flowspace::core
         }
         return result;
     }
-
-    // --- unlocked helpers -------------------------------------------------------
 
     std::vector<Workspace *> WorkspaceManager::WorkspacesForMonitorUnlocked(const std::wstring &monitorStableId)
     {
@@ -666,8 +660,7 @@ namespace flowspace::core
             if (!active.empty())
             {
                 const auto list = CopyWorkspacesForMonitor(workspaces_, monitorStableId);
-                if (std::any_of(list.begin(), list.end(), [&](const Workspace &ws)
-                                { return ws.id == active; }))
+                if (std::any_of(list.begin(), list.end(), [&](const Workspace &ws) { return ws.id == active; }))
                 {
                     return active;
                 }
@@ -696,9 +689,8 @@ namespace flowspace::core
         for (;;)
         {
             std::string id = std::format("ws-{}", counter.fetch_add(1, std::memory_order_relaxed));
-            const bool used = std::any_of(workspaces_.begin(), workspaces_.end(),
-                                          [&](const Workspace &ws)
-                                          { return ws.id == id; });
+            const bool used =
+                std::any_of(workspaces_.begin(), workspaces_.end(), [&](const Workspace &ws) { return ws.id == id; });
             if (!used)
             {
                 return id;
@@ -706,7 +698,9 @@ namespace flowspace::core
         }
     }
 
-    std::string WorkspaceManager::CloneWorkspaceSetUnlocked(const std::wstring &sourceMonitorId, const std::wstring &targetMonitorId, const std::string &sourceActiveWorkspaceId)
+    std::string WorkspaceManager::CloneWorkspaceSetUnlocked(const std::wstring &sourceMonitorId,
+                                                            const std::wstring &targetMonitorId,
+                                                            const std::string &sourceActiveWorkspaceId)
     {
         const auto sourceList = CopyWorkspacesForMonitor(workspaces_, sourceMonitorId);
         std::string cloneActive;
@@ -730,7 +724,8 @@ namespace flowspace::core
         return cloneActive;
     }
 
-    bool WorkspaceManager::WorkspaceBelongsToMonitorUnlocked(const std::string &workspaceId, const std::wstring &monitorStableId) const
+    bool WorkspaceManager::WorkspaceBelongsToMonitorUnlocked(const std::string &workspaceId,
+                                                             const std::wstring &monitorStableId) const
     {
         return std::any_of(workspaces_.begin(), workspaces_.end(), [&](const Workspace &ws)
                            { return ws.id == workspaceId && ws.monitorStableId == monitorStableId; });

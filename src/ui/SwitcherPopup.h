@@ -7,29 +7,22 @@
 
 namespace flowspace::ui
 {
-    /// <summary>
-    /// Manual workspace selector: a compact, translucent Windows 11-style panel centered on
-    /// the monitor it was opened for. Each row shows a monitor icon, the workspace name and
-    /// its number; the active row is accented. More than nine workspaces are shown in pages
-    /// with Prev/Next footer buttons (also Left/Right or PageUp/PageDown); Up/Down crosses
-    /// page boundaries. Click/Enter selects, digits 1-9 select directly, Escape or clicking
-    /// outside dismisses. Owned by the FlowSpace process, so it is excluded from management.
-    /// </summary>
+    /// Shows a workspace picker on the target monitor. Users can navigate with the keyboard
+    /// or mouse; the window belongs to FlowSpace and is not managed as a workspace window.
     class SwitcherPopup
     {
-    public:
+      public:
         struct Item
         {
             core::Workspace workspace;
-            int number;      // 1-based number, 0 when not addressable
-            bool active;     // active on the target monitor
+            int number;  // 1-based number, 0 when not addressable
+            bool active; // active on the target monitor
         };
 
-        // Shows the popup; returns after the user selects (id 1..N) or cancels (0).
-        // static so no persistent object is needed.
+        // Returns the selected workspace number, or 0 when the popup is dismissed.
         static int Show(HINSTANCE instance, const core::MonitorInfo &monitor, std::vector<Item> items);
     };
 
-    // Registers the popup window class once (called from the app entry point).
+    // Register the popup window class before creating the picker.
     void RegisterSwitcherClass(HINSTANCE instance);
 }

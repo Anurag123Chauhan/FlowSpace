@@ -9,10 +9,7 @@
 namespace flowspace::ui
 {
 
-    // ---------------------------------------------------------------------------
-    // Theme tokens — the single source of truth for colors, spacing and typography.
-    // All geometry is expressed at 96 DPI and scaled by Theme::DpiScale() at draw time.
-    // ---------------------------------------------------------------------------
+    // Theme colors, spacing, and typography use 96-DPI design units.
 
     enum class ThemeMode
     {
@@ -24,27 +21,27 @@ namespace flowspace::ui
     struct ThemeTokens
     {
         // Surfaces — Neutral Graphite (desaturated, warm-leaning greys; no blue tint).
-        COLORREF bg = RGB(26, 26, 26);           // #1A1A1A application background
-        COLORREF sidebar = RGB(22, 22, 22);      // #161616 left navigation
-        COLORREF surface = RGB(34, 34, 34);      // #222222 primary surface
-        COLORREF elevated = RGB(42, 42, 42);     // #2A2A2A elevated surface
-        COLORREF border = RGB(58, 58, 58);       // #3A3A3A neutral grey border
+        COLORREF bg = RGB(26, 26, 26);       // #1A1A1A application background
+        COLORREF sidebar = RGB(22, 22, 22);  // #161616 left navigation
+        COLORREF surface = RGB(34, 34, 34);  // #222222 primary surface
+        COLORREF elevated = RGB(42, 42, 42); // #2A2A2A elevated surface
+        COLORREF border = RGB(58, 58, 58);   // #3A3A3A neutral grey border
 
         // Text.
-        COLORREF text = RGB(232, 232, 232);      // #E8E8E8 primary text
-        COLORREF textDim = RGB(154, 154, 154);   // #9A9A9A secondary text
+        COLORREF text = RGB(232, 232, 232);    // #E8E8E8 primary text
+        COLORREF textDim = RGB(154, 154, 154); // #9A9A9A secondary text
         COLORREF textOnAccent = RGB(255, 255, 255);
 
         // Interactive — Muted Bronze accent (desaturated brown-orange).
-        COLORREF accent = RGB(168, 126, 90);     // #A87E5A muted bronze
+        COLORREF accent = RGB(168, 126, 90); // #A87E5A muted bronze
         COLORREF accentHover = RGB(150, 110, 78);
         COLORREF accentActive = RGB(130, 95, 68);
-        COLORREF inputBg = RGB(38, 38, 38);      // input field background
+        COLORREF inputBg = RGB(38, 38, 38); // input field background
         COLORREF inputBorder = RGB(58, 58, 58);
 
         // States.
-        COLORREF hover = RGB(46, 46, 46);        // subtle hover on surfaces
-        COLORREF selected = RGB(51, 51, 51);     // selected row background
+        COLORREF hover = RGB(46, 46, 46);    // subtle hover on surfaces
+        COLORREF selected = RGB(51, 51, 51); // selected row background
         COLORREF disabled = RGB(70, 70, 70);
         COLORREF disabledText = RGB(128, 128, 128);
 
@@ -64,35 +61,33 @@ namespace flowspace::ui
     struct LightThemeTokens
     {
         // Surfaces — Warm Stone (warm off-whites; no cool blue-grey).
-        COLORREF bg = RGB(245, 241, 235);        // #F5F1EB warm off-white
-        COLORREF sidebar = RGB(255, 255, 255);   // #FFFFFF
-        COLORREF surface = RGB(255, 255, 255);   // #FFFFFF
-        COLORREF elevated = RGB(238, 230, 221);  // #EEE6DD warm stone
-        COLORREF border = RGB(216, 208, 196);    // #D8D0C4 warm neutral grey
-        COLORREF text = RGB(42, 42, 42);         // #2A2A2A
-        COLORREF textDim = RGB(122, 122, 122);   // #7A7A7A
+        COLORREF bg = RGB(245, 241, 235);       // #F5F1EB warm off-white
+        COLORREF sidebar = RGB(255, 255, 255);  // #FFFFFF
+        COLORREF surface = RGB(255, 255, 255);  // #FFFFFF
+        COLORREF elevated = RGB(238, 230, 221); // #EEE6DD warm stone
+        COLORREF border = RGB(216, 208, 196);   // #D8D0C4 warm neutral grey
+        COLORREF text = RGB(42, 42, 42);        // #2A2A2A
+        COLORREF textDim = RGB(122, 122, 122);  // #7A7A7A
         COLORREF textOnAccent = RGB(255, 255, 255);
-        COLORREF accent = RGB(168, 126, 90);     // #A87E5A muted bronze
+        COLORREF accent = RGB(168, 126, 90); // #A87E5A muted bronze
         COLORREF accentHover = RGB(150, 110, 78);
         COLORREF accentActive = RGB(130, 95, 68);
         COLORREF inputBg = RGB(255, 255, 255);
         COLORREF inputBorder = RGB(216, 208, 196);
-        COLORREF hover = RGB(245, 238, 230);     // #F5EEE6
-        COLORREF selected = RGB(238, 230, 221);  // #EEE6DD
-        COLORREF disabled = RGB(235, 230, 224);  // #EBE6E0
+        COLORREF hover = RGB(245, 238, 230);    // #F5EEE6
+        COLORREF selected = RGB(238, 230, 221); // #EEE6DD
+        COLORREF disabled = RGB(235, 230, 224); // #EBE6E0
         COLORREF disabledText = RGB(178, 178, 178);
         COLORREF success = RGB(46, 160, 67);
         COLORREF warning = RGB(210, 135, 60);
         COLORREF error = RGB(196, 78, 70);
     };
 
-    // ---------------------------------------------------------------------------
-    // Theme — runtime theme state (mode, DPI scale, fonts, resolved tokens).
-    // ---------------------------------------------------------------------------
+    // Current theme, DPI scale, and fonts used by the settings UI.
 
     class AppTheme
     {
-    public:
+      public:
         AppTheme();
 
         ~AppTheme();
@@ -135,7 +130,7 @@ namespace flowspace::ui
         // Parse "#RRGGBB" to COLORREF (falls back to accent).
         static COLORREF FromHex(const std::wstring &hex);
 
-    private:
+      private:
         int Scale(int px96) const;
         void RebuildFonts();
         void ResolveSystemMode();
@@ -154,21 +149,18 @@ namespace flowspace::ui
         mutable bool fontsDirty_ = true;
     };
 
-    // ---------------------------------------------------------------------------
-    // Drawing primitives (all in the design system's coordinate space, DPI scaled).
-    // ---------------------------------------------------------------------------
+    // Drawing helpers use DPI-scaled design coordinates.
 
     namespace Draw
     {
         void Fill(HDC dc, const RECT &rect, COLORREF color);
         void Rect(HDC dc, const RECT &rect, COLORREF color, int width = 1);
-        void RoundRect(HDC dc, const RECT &rect, int radius, COLORREF fillColor,
-                       COLORREF borderColor, int borderWidth = 1);
+        void RoundRect(HDC dc, const RECT &rect, int radius, COLORREF fillColor, COLORREF borderColor,
+                       int borderWidth = 1);
         void Line(HDC dc, int x1, int y1, int x2, int y2, COLORREF color, int width = 1);
         void Text(HDC dc, const std::wstring &text, const RECT &rect, HFONT font, COLORREF color,
                   UINT format = DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-        void TextWrapped(HDC dc, const std::wstring &text, const RECT &rect, HFONT font,
-                         COLORREF color);
+        void TextWrapped(HDC dc, const std::wstring &text, const RECT &rect, HFONT font, COLORREF color);
 
         // Draws a monochrome line icon glyph from Segoe Fluent Icons / MDL2.
         void Icon(HDC dc, wchar_t glyph, const RECT &rect, HFONT font, COLORREF color);
@@ -177,11 +169,7 @@ namespace flowspace::ui
         SIZE MeasureText(HDC dc, const std::wstring &text, HFONT font);
     }
 
-    // ---------------------------------------------------------------------------
-    // Reusable components. Each draws itself into the given rect and reports the
-    // interactive rect (for hit-testing) via `outRect` when non-null.
-    // Components are stateless: the caller owns interaction state (hovered/pressed).
-    // ---------------------------------------------------------------------------
+    // Reusable controls draw themselves; the caller tracks hover and pressed state.
 
     namespace Components
     {
@@ -202,22 +190,27 @@ namespace flowspace::ui
         void Divider(HDC dc, const RECT &rect, const AppTheme &theme);
 
         // Text button. Returns the content rect (for hit-test).
-        RECT Button(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &label, HFONT font, bool hovered = false, bool selected = false, bool accent = false);
+        RECT Button(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &label, HFONT font,
+                    bool hovered = false, bool selected = false, bool accent = false);
 
         // Icon-only button (square).
-        RECT IconButton(HDC dc, const RECT &rect, const AppTheme &theme, wchar_t glyph, HFONT iconFont, bool hovered = false, bool selected = false, bool accent = false);
+        RECT IconButton(HDC dc, const RECT &rect, const AppTheme &theme, wchar_t glyph, HFONT iconFont,
+                        bool hovered = false, bool selected = false, bool accent = false);
 
         // Toggle switch.
         RECT Toggle(HDC dc, const RECT &rect, const AppTheme &theme, bool on, bool hovered = false);
 
         // Badge / status chip.
-        RECT Badge(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &label, HFONT font, COLORREF fill, COLORREF text);
+        RECT Badge(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &label, HFONT font,
+                   COLORREF fill, COLORREF text);
 
         // Section heading + optional secondary description.
-        void SectionHeader(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &heading, const std::wstring &description = L"");
+        void SectionHeader(HDC dc, const RECT &rect, const AppTheme &theme, const std::wstring &heading,
+                           const std::wstring &description = L"");
 
         // Empty state (icon + heading + description).
-        void EmptyState(HDC dc, const RECT &rect, const AppTheme &theme, wchar_t glyph, const std::wstring &heading, const std::wstring &description);
+        void EmptyState(HDC dc, const RECT &rect, const AppTheme &theme, wchar_t glyph, const std::wstring &heading,
+                        const std::wstring &description);
     }
 
 }

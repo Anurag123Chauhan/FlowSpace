@@ -15,8 +15,14 @@ namespace flowspace::core
 {
     namespace
     {
-        std::string W(const std::wstring &v) { return WideToUtf8(v); }
-        std::wstring S(const std::string &v) { return Utf8ToWide(v); }
+        std::string W(const std::wstring &v)
+        {
+            return WideToUtf8(v);
+        }
+        std::wstring S(const std::string &v)
+        {
+            return Utf8ToWide(v);
+        }
 
         json EntryToJson(const RecoveryEntry &e)
         {
@@ -66,8 +72,7 @@ namespace flowspace::core
         }
     }
 
-    RecoveryManager::RecoveryManager(std::wstring journalPath)
-        : journalPath_(std::move(journalPath))
+    RecoveryManager::RecoveryManager(std::wstring journalPath) : journalPath_(std::move(journalPath))
     {
     }
 
@@ -151,8 +156,8 @@ namespace flowspace::core
         }
     }
 
-    void RecoveryManager::RecordHide(const core::WindowInfo &window, const std::string &workspaceId,
-                                     bool wasMinimized, bool wasMaximized, const RECT &restoreRect)
+    void RecoveryManager::RecordHide(const core::WindowInfo &window, const std::string &workspaceId, bool wasMinimized,
+                                     bool wasMaximized, const RECT &restoreRect)
     {
         // Refresh or replace any existing entry for this hwnd (e.g. re-hidden after a peek).
         RecordShow(window.hwnd);
@@ -170,9 +175,9 @@ namespace flowspace::core
         e.wasMinimized = wasMinimized;
         e.wasMaximized = wasMaximized;
         e.restoreRect = restoreRect;
-        e.hiddenAtUnixMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-                               std::chrono::system_clock::now().time_since_epoch())
-                               .count();
+        e.hiddenAtUnixMs =
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+                .count();
         entries_.push_back(std::move(e));
         Save();
     }
@@ -181,8 +186,7 @@ namespace flowspace::core
     {
         const size_t before = entries_.size();
         entries_.erase(
-            std::remove_if(entries_.begin(), entries_.end(),
-                           [hwnd](const RecoveryEntry &e) { return e.hwnd == hwnd; }),
+            std::remove_if(entries_.begin(), entries_.end(), [hwnd](const RecoveryEntry &e) { return e.hwnd == hwnd; }),
             entries_.end());
         if (entries_.size() != before)
         {

@@ -14,9 +14,8 @@ using nlohmann::json;
 
 namespace flowspace::core
 {
-    // nlohmann serializes custom types through unqualified to_json/from_json calls resolved by
-    // ADL, so these must live in flowspace::core itself — an anonymous namespace would hide
-    // them from ADL.
+    // The JSON library finds these conversion functions in the type's namespace.
+    // Keep them in flowspace::core instead of an anonymous namespace.
     void to_json(nlohmann::json &j, const HotkeyBinding &h);
     void from_json(const nlohmann::json &j, HotkeyBinding &h);
     void to_json(nlohmann::json &j, const AppRule &r);
@@ -24,16 +23,21 @@ namespace flowspace::core
     void to_json(nlohmann::json &j, const Workspace &ws);
     void from_json(const nlohmann::json &j, Workspace &ws);
 
-    // Helpers below live directly in flowspace::core (not an anonymous namespace): nlohmann
-    // resolves to_json/from_json for custom types via ADL, which only searches the associated
-    // namespace flowspace::core. They are not declared in the header, so they remain internal
-    // to this translation unit for all practical purposes.
-    std::string W(const std::wstring &v) { return WideToUtf8(v); }
-    std::wstring S(const std::string &v) { return Utf8ToWide(v); }
+    std::string W(const std::wstring &v)
+    {
+        return WideToUtf8(v);
+    }
+    std::wstring S(const std::string &v)
+    {
+        return Utf8ToWide(v);
+    }
 
     void to_json(json &j, const HotkeyBinding &h)
     {
-        j = json{{"action", static_cast<int>(h.action)}, {"enabled", h.enabled}, {"modifiers", W(h.modifiers)}, {"key", W(h.key)}};
+        j = json{{"action", static_cast<int>(h.action)},
+                 {"enabled", h.enabled},
+                 {"modifiers", W(h.modifiers)},
+                 {"key", W(h.key)}};
     }
 
     void from_json(const json &j, HotkeyBinding &h)
@@ -49,7 +53,15 @@ namespace flowspace::core
 
     void to_json(json &j, const AppRule &r)
     {
-        j = json{{"id", r.id}, {"enabled", r.enabled}, {"exeName", W(r.exeName)}, {"exePath", W(r.exePath)}, {"titleContains", W(r.titleContains)}, {"targetWorkspaceId", r.targetWorkspaceId}, {"monitorPreference", static_cast<int>(r.monitorPreference)}, {"monitorStableId", W(r.monitorStableId)}, {"launchCommand", W(r.launchCommand)}};
+        j = json{{"id", r.id},
+                 {"enabled", r.enabled},
+                 {"exeName", W(r.exeName)},
+                 {"exePath", W(r.exePath)},
+                 {"titleContains", W(r.titleContains)},
+                 {"targetWorkspaceId", r.targetWorkspaceId},
+                 {"monitorPreference", static_cast<int>(r.monitorPreference)},
+                 {"monitorStableId", W(r.monitorStableId)},
+                 {"launchCommand", W(r.launchCommand)}};
     }
 
     void from_json(const json &j, AppRule &r)
@@ -67,7 +79,18 @@ namespace flowspace::core
 
     void to_json(json &j, const Workspace &ws)
     {
-        j = json{{"id", ws.id}, {"name", ws.name}, {"icon", ws.icon}, {"accentColor", ws.accentColor}, {"orderIndex", ws.orderIndex}, {"monitor", W(ws.monitorStableId)}, {"overlayBackgroundColor", W(ws.overlayBackgroundColor)}, {"overlayTextColor", W(ws.overlayTextColor)}, {"overlayPattern", W(ws.overlayPattern)}, {"overlayPatternOpacity", ws.overlayPatternOpacity}, {"overlayAnimation", ws.overlayAnimation}, {"overlayAnimationMs", ws.overlayAnimationMs}};
+        j = json{{"id", ws.id},
+                 {"name", ws.name},
+                 {"icon", ws.icon},
+                 {"accentColor", ws.accentColor},
+                 {"orderIndex", ws.orderIndex},
+                 {"monitor", W(ws.monitorStableId)},
+                 {"overlayBackgroundColor", W(ws.overlayBackgroundColor)},
+                 {"overlayTextColor", W(ws.overlayTextColor)},
+                 {"overlayPattern", W(ws.overlayPattern)},
+                 {"overlayPatternOpacity", ws.overlayPatternOpacity},
+                 {"overlayAnimation", ws.overlayAnimation},
+                 {"overlayAnimationMs", ws.overlayAnimationMs}};
     }
 
     void from_json(const json &j, Workspace &ws)
@@ -114,12 +137,8 @@ namespace flowspace::core
         }
 
         return json{
-            {"schemaVersion", c.schemaVersion},
-            {"settings", settings},
-            {"workspaces", c.workspaces},
-            {"appRules", c.appRules},
-            {"hotkeys", c.hotkeys},
-            {"monitorState", monitorState},
+            {"schemaVersion", c.schemaVersion}, {"settings", settings}, {"workspaces", c.workspaces},
+            {"appRules", c.appRules},           {"hotkeys", c.hotkeys}, {"monitorState", monitorState},
         };
     }
 
@@ -212,8 +231,7 @@ namespace flowspace::core
             {
                 std::string id = "ws-" + std::to_string(counter.fetch_add(1, std::memory_order_relaxed));
                 const bool used = std::any_of(config.workspaces.begin(), config.workspaces.end(),
-                                              [&](const Workspace &ws)
-                                              { return ws.id == id; });
+                                              [&](const Workspace &ws) { return ws.id == id; });
                 if (!used)
                 {
                     return id;
@@ -231,8 +249,8 @@ namespace flowspace::core
                     result.push_back(ws);
                 }
             }
-            std::stable_sort(result.begin(), result.end(), [](const Workspace &a, const Workspace &b)
-                             { return a.orderIndex < b.orderIndex; });
+            std::stable_sort(result.begin(), result.end(),
+                             [](const Workspace &a, const Workspace &b) { return a.orderIndex < b.orderIndex; });
             return result;
         }
 
@@ -290,8 +308,7 @@ namespace flowspace::core
             std::vector<std::wstring> knownMonitors;
             auto remember = [&](const std::wstring &id)
             {
-                if (!id.empty() &&
-                    std::find(knownMonitors.begin(), knownMonitors.end(), id) == knownMonitors.end())
+                if (!id.empty() && std::find(knownMonitors.begin(), knownMonitors.end(), id) == knownMonitors.end())
                 {
                     knownMonitors.push_back(id);
                 }
@@ -332,8 +349,7 @@ namespace flowspace::core
 
                 const bool alreadyHasWorkspaces =
                     std::any_of(config.workspaces.begin(), config.workspaces.end(),
-                                [&](const Workspace &ws)
-                                { return ws.monitorStableId == monitorId; });
+                                [&](const Workspace &ws) { return ws.monitorStableId == monitorId; });
                 if (alreadyHasWorkspaces)
                 {
                     RemapMonitorStateByIndex(config, monitorId);
@@ -472,9 +488,9 @@ namespace flowspace::core
         for (auto it = config.monitorState.begin(); it != config.monitorState.end();)
         {
             auto wsIt = std::find_if(config.workspaces.begin(), config.workspaces.end(),
-                                     [&](const Workspace &ws)
-                                     { return ws.id == it->second; });
-            const bool ok = wsIt != config.workspaces.end() && (wsIt->monitorStableId.empty() || wsIt->monitorStableId == it->first);
+                                     [&](const Workspace &ws) { return ws.id == it->second; });
+            const bool ok = wsIt != config.workspaces.end() &&
+                            (wsIt->monitorStableId.empty() || wsIt->monitorStableId == it->first);
             if (!ok)
             {
                 it = config.monitorState.erase(it);
@@ -489,26 +505,23 @@ namespace flowspace::core
         // These are leftovers from a v1->v2 migration that already cloned the set to every
         // monitor; keeping them would inflate counts (e.g. Overview showing 8 instead of 4).
         const bool hasAssigned = std::any_of(config.workspaces.begin(), config.workspaces.end(),
-                                             [](const Workspace &ws)
-                                             { return !ws.monitorStableId.empty(); });
+                                             [](const Workspace &ws) { return !ws.monitorStableId.empty(); });
         if (hasAssigned)
         {
             auto it = std::remove_if(config.workspaces.begin(), config.workspaces.end(),
-                                     [](const Workspace &ws)
-                                     { return ws.monitorStableId.empty(); });
+                                     [](const Workspace &ws) { return ws.monitorStableId.empty(); });
             if (it != config.workspaces.end())
             {
-                spdlog::warn("Dropping {} orphaned unassigned workspace(s)", std::distance(it, config.workspaces.end()));
+                spdlog::warn("Dropping {} orphaned unassigned workspace(s)",
+                             std::distance(it, config.workspaces.end()));
                 config.workspaces.erase(it, config.workspaces.end());
             }
         }
 
         // Validate hotkeys: drop entries without a key.
-        config.hotkeys.erase(
-            std::remove_if(config.hotkeys.begin(), config.hotkeys.end(),
-                           [](const HotkeyBinding &h)
-                           { return h.key.empty(); }),
-            config.hotkeys.end());
+        config.hotkeys.erase(std::remove_if(config.hotkeys.begin(), config.hotkeys.end(),
+                                            [](const HotkeyBinding &h) { return h.key.empty(); }),
+                             config.hotkeys.end());
 
         if (config.settings.overlayAnimationMs < 0)
         {
@@ -603,7 +616,8 @@ namespace flowspace::core
                 std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
                 if (!out)
                 {
-                    spdlog::error("Cannot open config for writing: {}", std::string(main.u8string().begin(), main.u8string().end()));
+                    spdlog::error("Cannot open config for writing: {}",
+                                  std::string(main.u8string().begin(), main.u8string().end()));
                     return false;
                 }
                 out << text;

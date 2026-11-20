@@ -6,19 +6,14 @@
 
 namespace flowspace::ui
 {
-    /// <summary>
-    /// Temporary, non-activating notification shown after a workspace switch. Displays only
-    /// the newly selected workspace, anchored bottom-center on the correct monitor, and
-    /// dismisses itself after ~800ms.
-    /// Uses a layered cached DIB for the translucent rounded card and its fade/scale animation.
-    /// It never receives keyboard or mouse input.
-    /// </summary>
+    /// Briefly shows the newly selected workspace on the correct monitor.
+    /// The notification does not take focus or receive input.
     class SwitchNotification
     {
-    public:
-        static void Show(HINSTANCE instance, const core::MonitorInfo &monitor, const core::Workspace &workspace, int workspaceNumber, const std::string &animationStyle, int animationMs);
+      public:
+        static void Show(HINSTANCE instance, const core::MonitorInfo &monitor, const core::Workspace &workspace,
+                         int workspaceNumber, const std::string &animationStyle, int animationMs);
     };
 
-    // Registers the notification window class once at startup.
     void RegisterSwitchNotificationClass(HINSTANCE instance);
 }

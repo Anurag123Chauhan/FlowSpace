@@ -176,6 +176,7 @@ Source layout:
 | Dependency | Location | License | Use |
 |------------|----------|---------|-----|
 | spdlog | `external/spdlog/include` | MIT | logging |
+| {fmt} (bundled with spdlog) | `external/spdlog/include/spdlog/fmt/bundled` | MIT + redistribution exception | spdlog formatting |
 | nlohmann/json | `external/nlohmann` (single header) | MIT | config/journal JSON |
 
 Both vendored in-tree. No package manager required.
@@ -195,6 +196,10 @@ Four static libraries + two executables + one test executable:
 `enable_testing()` + `add_test(NAME core_tests COMMAND flowspace_tests)`.
 
 Compile definitions: `UNICODE`, `_UNICODE`, `_WIN32_WINNT=0x0A00`, `NTDDI_VERSION=0x0A000000`, `NOMINMAX`, `FLOWSPACE_DEBUG` (Debug config). C++23, no extensions, no modules scan. Static link (`-static`).
+
+## Release packaging
+
+`.github/workflows/release.yml` checks out the pinned `spdlog` submodule, builds and tests the x64 app, then calls `scripts/package-release.ps1`. The script creates the portable ZIP and Inno Setup installer, includes third-party licenses, resolves runtime DLL dependencies, and smoke-tests installation and uninstallation. Optional signing uses the `WINDOWS_CERTIFICATE_BASE64` and `WINDOWS_CERTIFICATE_PASSWORD` secrets.
 
 ## Data flow between modules
 
@@ -249,5 +254,5 @@ Compile definitions: `UNICODE`, `_UNICODE`, `_WIN32_WINNT=0x0A00`, `NTDDI_VERSIO
 
 ## Related documentation
 
-- `.ai/CONFIGURATION.md` — config.json schema reference.
-- `.ai/TESTING.md` — manual integration test checklist (live run, crash recovery, display-change, wallpaper restore).
+- [CONFIGURATION.md](CONFIGURATION.md) — config.json schema reference.
+- [TESTING.md](TESTING.md) — manual integration test checklist (live run, crash recovery, display-change, wallpaper restore).

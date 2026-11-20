@@ -24,7 +24,7 @@ FlowSpace is an independent per-monitor workspace manager for Windows 10/11. Eac
 | `ui` | Switcher popup, notification, tray, settings window (Win32/GDI, custom-drawn) | `src/ui/MainWindow.{h,cpp}`, `SwitcherPopup.{h,cpp}`, `SwitchNotification.{h,cpp}`, `TrayIcon.{h,cpp}`, `Theme.{h,cpp}`, `SwitcherVisual.{h,cpp}` |
 | `app` | Entry point, single-instance, COM, message loop, wiring | `src/app/main.cpp`, `src/app/diagnostic_main.cpp` |
 
-- **External dependencies (vendored):** spdlog (`external/spdlog/include`, MIT), nlohmann/json (`external/nlohmann`, MIT single-header).
+- **External dependencies (vendored):** spdlog and its bundled {fmt} library (`external/spdlog`, MIT); nlohmann/json (`external/nlohmann`, MIT single-header).
 - **Windows APIs used:** user32, gdi32, shell32, advapi32, ole32, oleaut32, comdlg32, comctl32, msimg32, uuid, dwmapi, shcore, uxtheme. Key COM: `IDesktopWallpaper` (per-monitor wallpaper).
 - **Build:** CMake 3.25+, Ninja, MinGW g++. Static `-static` link so the exe needs no MinGW runtime DLLs.
 
@@ -36,10 +36,14 @@ FlowSpace/
 ├── README.md                      # user-facing docs (build, run, features, known limits)
 ├── UNINSTALL.md
 ├── THIRD-PARTY-NOTICES.txt
-├── .ai/
-│   ├── ARCHITECTURE.md            # deep-dive module relationships, APIs, data flow
-│   ├── CONFIGURATION.md           # config.json schema reference
-│   └── TESTING.md                 # manual integration test checklist
+├── docs/
+│   └── engineering/
+│       ├── ARCHITECTURE.md        # module relationships, APIs, data flow
+│       ├── CODE_QUALITY.md        # C++ quality rules and formatting
+│       ├── CONFIGURATION.md       # config.json schema reference
+│       └── TESTING.md             # manual integration test checklist
+├── .opencode/
+│   └── skills/cpp-cleanup/SKILL.md # OpenCode skill for C++ cleanup/refactoring tasks
 ├── src/
 │   ├── app/                       # main.cpp, diagnostic_main.cpp
 │   ├── core/                      # domain models + services
@@ -47,7 +51,7 @@ FlowSpace/
 │   ├── platform/                  # Win32/COM managers
 │   └── ui/                        # switcher, notification, tray, settings
 ├── tests/test_core.cpp            # self-contained test harness (137 checks)
-├── scripts/                       # build.ps1, compile-check.ps1, make-icon.ps1, stop.ps1
+├── scripts/                       # build, format, icon, release packaging, and stop helpers
 ├── packaging/                     # app.rc, app.manifest, FlowSpace.iss
 ├── external/                      # vendored spdlog, nlohmann/json
 ├── .github/workflows/release.yml  # automated x64 Windows release
@@ -76,6 +80,9 @@ FlowSpace/
 ### Build (PowerShell)
 
 ```powershell
+# First-time setup after cloning
+git submodule update --init --recursive
+
 # Debug build (default)
 powershell -ExecutionPolicy Bypass -File scripts\build.ps1
 
@@ -125,12 +132,13 @@ ctest --test-dir build\cmake
 
 **Always read:**
 1. `AGENTS.md` — this file
-2. `.ai/ARCHITECTURE.md` — architectural reference
+2. `docs/engineering/ARCHITECTURE.md` — architectural reference
 
 **Read when relevant:**
-- `.ai/ARCHITECTURE.md` — before architectural changes or when adding modules.
-- `.ai/CONFIGURATION.md` — when changing config schema or settings.
-- `.ai/TESTING.md` — before touching engine, window management, wallpaper, or shutdown paths.
+- `docs/engineering/ARCHITECTURE.md` — before architectural changes or when adding modules.
+- `docs/engineering/CODE_QUALITY.md` — when cleaning up, refactoring, or reviewing C++ style/structure.
+- `docs/engineering/CONFIGURATION.md` — when changing config schema or settings.
+- `docs/engineering/TESTING.md` — before touching engine, window management, wallpaper, or shutdown paths.
 
 **Always inspect actual source code before changing it, regardless of what documentation says.** Documentation can lag the implementation.
 
@@ -138,13 +146,13 @@ ctest --test-dir build\cmake
 
 ### Before starting work
 1. Read `AGENTS.md`.
-2. Read relevant files from `.ai/`.
+2. Read relevant files from `docs/engineering/`.
 3. Inspect Git status (`git status`) and recent commits (`git log --oneline -10`).
 4. Inspect relevant source code.
 5. Understand the existing implementation before proposing changes.
 
 ### Before ending work
-1. Update `.ai/ARCHITECTURE.md` when architectural understanding changes.
+1. Update `docs/engineering/ARCHITECTURE.md` when architectural understanding changes.
 2. Record modified files and test results.
 3. Record unresolved issues and blockers.
 
@@ -169,7 +177,7 @@ Do not update files mechanically if nothing has changed.
 4. **Distinguish verified facts from assumptions.** Mark unknown information as "unknown" rather than guessing.
 5. **Never put secrets, API keys, or credentials in documentation.**
 6. **Do not fabricate historical decisions or sessions.** Git history can be referenced as evidence, but is not an AI session transcript.
-7. **Keep documentation in Git.** All `.ai/` files are committed to the repository.
+7. **Keep documentation in Git.** All engineering reference docs are committed to the repository.
 
 ## Git safety rules
 
@@ -183,5 +191,5 @@ Do not record dynamic git state (current branch, remotes, last commit) in docume
 ## Undocumented / uncertain areas
 
 - No active development task is currently identified.
-- The `.vscode/` launch/debug configuration exists (`launch.json`, `tasks.json`, `c_cpp_properties.json`) but is not documented in detail.
+- VS Code tasks are in `.vscode/tasks.json`; F5 builds Debug with `scripts/build.ps1` and launches `build/cmake/flowspace.exe` through GDB.
 - The `build/` directory contains a pre-generated `flowspace.ico` and a `cmake/` subdirectory (gitignored build output).

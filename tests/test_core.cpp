@@ -1,13 +1,5 @@
-// FlowSpace core-logic tests. Self-contained mini assert harness (no external framework),
-// per the project's vendored-deps-only constraint. Covers:
-//   - StringUtils: wide<->utf8 round trip, hex color parsing/formatting
-//   - ConfigService: fresh defaults, save/load round trip, corrupt-file backup recovery,
-//     v0->v1 migration, normalize (duplicate ids, order renumbering, invalid colors)
-//   - RecoveryManager: record/hide->show round trip, save/load persistence
-//   - WorkspaceManager: CRUD, duplicate, reset, reorder, adjacency, window assignment
-//   - HotkeyManager: modifier/key parsing, name round trip, conflict detection
-//
-// Run: build/cmake/flowspace_tests.exe (exit code 0 = all pass).
+// Core tests cover configuration, recovery, workspace, string, and hotkey behavior.
+// Run build/cmake/flowspace_tests.exe; an exit code of 0 means all tests passed.
 
 #include "core/ConfigService.h"
 #include "core/RecoveryManager.h"
@@ -50,7 +42,8 @@ namespace
         {
             wchar_t base[MAX_PATH]{};
             GetTempPathW(MAX_PATH, base);
-            path = std::wstring(base) + L"flowspace-tests-" + std::wstring(tag.begin(), tag.end()) + L"-" + std::to_wstring(GetCurrentProcessId());
+            path = std::wstring(base) + L"flowspace-tests-" + std::wstring(tag.begin(), tag.end()) + L"-" +
+                   std::to_wstring(GetCurrentProcessId());
             fs::remove_all(fs::path(path), ec);
             fs::create_directories(fs::path(path));
         }
@@ -125,15 +118,16 @@ namespace
         {
             flowspace::core::ConfigService config(dir.File(L"config.json"), dir.File(L"config.backup.json"));
             config.Load();
-            config.Get().workspaces.push_back(flowspace::core::Workspace{
-                .id = "ws-custom", .name = "Καλημέρα", .icon = "gamepad",
-                .accentColor = "#E5534B", .orderIndex = 90,
-                .monitorStableId = L"\\\\?\\DISPLAY#TEST#1"});
+            config.Get().workspaces.push_back(flowspace::core::Workspace{.id = "ws-custom",
+                                                                         .name = "Καλημέρα",
+                                                                         .icon = "gamepad",
+                                                                         .accentColor = "#E5534B",
+                                                                         .orderIndex = 90,
+                                                                         .monitorStableId = L"\\\\?\\DISPLAY#TEST#1"});
             config.Get().settings.hideMode = flowspace::core::HideMode::Minimize;
             config.Get().settings.overlayAnimationMs = 250;
             config.Get().appRules.push_back(flowspace::core::AppRule{
-                .id = "rule-1", .enabled = true, .exeName = L"notepad.exe",
-                .targetWorkspaceId = "ws-1"});
+                .id = "rule-1", .enabled = true, .exeName = L"notepad.exe", .targetWorkspaceId = "ws-1"});
             config.Get().monitorState[L"\\\\?\\DISPLAY#TEST#1"] = "ws-1";
             CHECK(config.Save());
         }
@@ -144,9 +138,11 @@ namespace
             const auto &c = config.Get();
             const bool foundCustom = std::any_of(c.workspaces.begin(), c.workspaces.end(),
                                                  [](const auto &ws)
-                                                 { return ws.id == "ws-custom" && ws.name == "Καλημέρα"
-                                                              && ws.accentColor == "#E5534B"
-                                                              && ws.monitorStableId == L"\\\\?\\DISPLAY#TEST#1"; });
+                                                 {
+                                                     return ws.id == "ws-custom" && ws.name == "Καλημέρα" &&
+                                                            ws.accentColor == "#E5534B" &&
+                                                            ws.monitorStableId == L"\\\\?\\DISPLAY#TEST#1";
+                                                 });
             CHECK(foundCustom);
             CHECK(c.settings.hideMode == flowspace::core::HideMode::Minimize);
             CHECK(c.settings.overlayAnimationMs == 250);
@@ -169,7 +165,7 @@ namespace
             CHECK(config.Save()); // main = 999, backup = 180 (previous state)
         }
         CHECK(fs::exists(fs::path(dir.File(L"config.backup.json"))));
-        {   // Corrupt main: truncated garbage.
+        { // Corrupt main: truncated garbage.
             FILE *f = _wfopen(dir.File(L"config.json").c_str(), L"wb");
             fwprintf(f, L"{ \"schemaVersion\": 1, \"settings\": { \"overlayAnimationMs\": [");
             fclose(f);
@@ -200,14 +196,13 @@ namespace
     {
         TempDir dir("migrate");
         // Legacy v0 config: no schemaVersion field, no hotkeys.
-        const char *v0 =
-            "{\n"
-            "  \"settings\": {\"hideMode\": 1, \"wallpaperManagementEnabled\": true},\n"
-            "  \"workspaces\": [\n"
-            "    {\"id\": \"ws-1\", \"name\": \"Work\"},\n"
-            "    {\"id\": \"ws-2\", \"name\": \"Home\"}\n"
-            "  ]\n"
-            "}\n";
+        const char *v0 = "{\n"
+                         "  \"settings\": {\"hideMode\": 1, \"wallpaperManagementEnabled\": true},\n"
+                         "  \"workspaces\": [\n"
+                         "    {\"id\": \"ws-1\", \"name\": \"Work\"},\n"
+                         "    {\"id\": \"ws-2\", \"name\": \"Home\"}\n"
+                         "  ]\n"
+                         "}\n";
         FILE *f = _wfopen(dir.File(L"config.json").c_str(), L"wb");
         fwrite(v0, 1, strlen(v0), f);
         fclose(f);
@@ -227,19 +222,18 @@ namespace
         TempDir dir("migrate2");
         // v1: one global workspace list shared by two monitors. Each monitor's active
         // workspace must be remapped onto its own cloned list.
-        const char *v1 =
-            "{\n"
-            "  \"schemaVersion\": 1,\n"
-            "  \"settings\": {\"wallpaperManagementEnabled\": true},\n"
-            "  \"workspaces\": [\n"
-            "    {\"id\": \"ws-1\", \"name\": \"Work\", \"orderIndex\": 0},\n"
-            "    {\"id\": \"ws-2\", \"name\": \"Home\", \"orderIndex\": 1}\n"
-            "  ],\n"
-            "  \"monitorState\": {\n"
-            "    \"MON-A\": \"ws-1\",\n"
-            "    \"MON-B\": \"ws-2\"\n"
-            "  }\n"
-            "}\n";
+        const char *v1 = "{\n"
+                         "  \"schemaVersion\": 1,\n"
+                         "  \"settings\": {\"wallpaperManagementEnabled\": true},\n"
+                         "  \"workspaces\": [\n"
+                         "    {\"id\": \"ws-1\", \"name\": \"Work\", \"orderIndex\": 0},\n"
+                         "    {\"id\": \"ws-2\", \"name\": \"Home\", \"orderIndex\": 1}\n"
+                         "  ],\n"
+                         "  \"monitorState\": {\n"
+                         "    \"MON-A\": \"ws-1\",\n"
+                         "    \"MON-B\": \"ws-2\"\n"
+                         "  }\n"
+                         "}\n";
         FILE *f = _wfopen(dir.File(L"config.json").c_str(), L"wb");
         fwrite(v1, 1, strlen(v1), f);
         fclose(f);
@@ -261,8 +255,8 @@ namespace
                     list.push_back(&ws);
                 }
             }
-            std::sort(list.begin(), list.end(), [](const auto *a, const auto *b)
-                      { return a->orderIndex < b->orderIndex; });
+            std::sort(list.begin(), list.end(),
+                      [](const auto *a, const auto *b) { return a->orderIndex < b->orderIndex; });
             return list;
         };
 
@@ -481,12 +475,10 @@ namespace
         CHECK(!wm.SetActiveWorkspace(monitors[0].stableId, listB.front().id));
         CHECK(!wm.SetActiveWorkspace(monitors[1].stableId, listA.front().id));
 
-        CHECK(wm.ResolveAdjacentWorkspaceId(monitors[0].stableId,
-                                            flowspace::core::WorkspaceSwitchDirection::Next)
-              == std::optional<std::string>(listA[1].id));
-        CHECK(wm.ResolveAdjacentWorkspaceId(monitors[1].stableId,
-                                            flowspace::core::WorkspaceSwitchDirection::Next)
-              == std::optional<std::string>(listB.front().id));
+        CHECK(wm.ResolveAdjacentWorkspaceId(monitors[0].stableId, flowspace::core::WorkspaceSwitchDirection::Next) ==
+              std::optional<std::string>(listA[1].id));
+        CHECK(wm.ResolveAdjacentWorkspaceId(monitors[1].stableId, flowspace::core::WorkspaceSwitchDirection::Next) ==
+              std::optional<std::string>(listB.front().id));
 
         // Numbers are 1-based and monitor-local.
         CHECK(wm.GetWorkspaceNumber(monitors[0].stableId, listA[2].id) == std::optional<int>(3));
@@ -529,10 +521,11 @@ namespace
         CHECK(!wm.SetActiveWorkspace(monitors[0].stableId, "ghost"));
 
         // Adjacent resolution wraps around the monitor's own list.
-        CHECK(wm.ResolveAdjacentWorkspaceId(monitors[0].stableId, flowspace::core::WorkspaceSwitchDirection::Next)
-                  == std::optional<std::string>(listA2[1].id));
-        CHECK(wm.ResolveAdjacentWorkspaceId(monitors[0].stableId, flowspace::core::WorkspaceSwitchDirection::Previous)
-                  == std::optional<std::string>(listA2.back().id));
+        CHECK(wm.ResolveAdjacentWorkspaceId(monitors[0].stableId, flowspace::core::WorkspaceSwitchDirection::Next) ==
+              std::optional<std::string>(listA2[1].id));
+        CHECK(
+            wm.ResolveAdjacentWorkspaceId(monitors[0].stableId, flowspace::core::WorkspaceSwitchDirection::Previous) ==
+            std::optional<std::string>(listA2.back().id));
 
         // Reconcile with a disconnected monitor keeps per-monitor state.
         std::vector<flowspace::core::MonitorInfo> onlyPrimary(1);
@@ -636,7 +629,8 @@ namespace
 
         flowspace::core::HotkeyBinding b{flowspace::core::HotkeyAction::NextWorkspace, true, L"Ctrl+Alt", L"Right"};
         CHECK(HotkeyManager::Describe(b) == L"Ctrl+Alt+Right");
-        flowspace::core::HotkeyBinding num{flowspace::core::HotkeyAction::SwitchToWorkspaceByNumber, true, L"Ctrl+Alt", L"D3"};
+        flowspace::core::HotkeyBinding num{flowspace::core::HotkeyAction::SwitchToWorkspaceByNumber, true, L"Ctrl+Alt",
+                                           L"D3"};
         CHECK(HotkeyManager::Describe(num) == L"Ctrl+Alt+3");
     }
 
@@ -658,7 +652,8 @@ namespace
         wc.lpszClassName = cls;
         wc.hInstance = GetModuleHandleW(nullptr);
         RegisterClassW(&wc);
-        HWND msgWindow = CreateWindowExW(0, wc.lpszClassName, L"", 0, 0, 0, 0, 0, nullptr, nullptr, wc.hInstance, nullptr);
+        HWND msgWindow =
+            CreateWindowExW(0, wc.lpszClassName, L"", 0, 0, 0, 0, 0, nullptr, nullptr, wc.hInstance, nullptr);
         CHECK(msgWindow != nullptr);
 
         const auto conflicts = hotkeys.RegisterAll(msgWindow, conflicting);

@@ -45,24 +45,15 @@ namespace flowspace::engine
         std::string error; // engine-level failure reason, empty on success
     };
 
-    /// <summary>
-    /// The workspace engine. Owns the hidden message window that receives WM_HOTKEY,
-    /// WM_DISPLAYCHANGE and WinEvent hook callbacks, and orchestrates workspace switching:
-    /// window discovery, assignment resolution, hide/show with recovery journaling, and
-    /// overlay display. All state-changing operations run on the main thread's message loop,
-    /// which serializes them by construction — no overlapping switches.
-    /// </summary>
+    /// Handles workspace switching and window events on the app's main message loop.
+    /// It coordinates window visibility, recovery journaling, wallpapers, and UI updates.
     class WorkspaceEngine
     {
-    public:
-        WorkspaceEngine(platform::MonitorManager &monitors,
-                        platform::WindowManager &windows,
-                        core::WorkspaceManager &workspaces,
-                        core::ConfigService &config,
-                        core::RecoveryManager &recovery,
-                        platform::HotkeyManager &hotkeys);
+      public:
+        WorkspaceEngine(platform::MonitorManager &monitors, platform::WindowManager &windows,
+                        core::WorkspaceManager &workspaces, core::ConfigService &config,
+                        core::RecoveryManager &recovery, platform::HotkeyManager &hotkeys);
 
-        // Creates nothing; the message window is created by the app and passed here.
         void Attach(HWND messageWindow);
 
         // Startup sequence: reconcile monitors, apply persisted state, restore journal-hidden
@@ -70,11 +61,11 @@ namespace flowspace::engine
         void Initialize();
         void Shutdown();
 
-        // --- Actions (called from hotkeys, tray, and the settings UI) ---
         SwitchResult SwitchMonitorToWorkspace(const std::wstring &monitorStableId, const std::string &workspaceId);
         SwitchResult SwitchRelative(const std::wstring &monitorStableId, SwitchDirection direction);
         SwitchResult SwitchByNumber(const std::wstring &monitorStableId, int numberOneBased);
-        bool MoveActiveWindowToWorkspace(const std::string &workspaceId, const std::wstring &monitorStableId = {}, const core::WindowInfo *window = nullptr);
+        bool MoveActiveWindowToWorkspace(const std::string &workspaceId, const std::wstring &monitorStableId = {},
+                                         const core::WindowInfo *window = nullptr);
         bool MoveActiveWindowRelative(SwitchDirection direction);
         bool MoveActiveWindowByNumber(int numberOneBased);
         void RevealAllWindows(); // emergency reveal-all; also used on clean shutdown
@@ -82,7 +73,7 @@ namespace flowspace::engine
         // Reconciles engine state against the current display topology (WM_DISPLAYCHANGE).
         void HandleDisplayChange();
 
-        // WinEvent hook callback. eventThread-safe: must be called on the engine thread.
+        // Handle a window event on the app's main thread.
         void HandleWindowEvent(WindowEventType type, HWND hwnd);
 
         // Hotkey handling from WM_HOTKEY. Returns true when the id was recognized.
@@ -94,10 +85,9 @@ namespace flowspace::engine
         // Re-applies hotkeys after shortcut changes; returns conflicts for the UI.
         std::vector<std::wstring> ApplyHotkeys();
 
-        // --- UI facade (settings window convenience accessors) ---
         [[nodiscard]] std::vector<core::Workspace> GetWorkspaces() const; // all workspaces, grouped by monitor
         [[nodiscard]] std::vector<core::Workspace> GetWorkspacesForMonitor(const std::wstring &monitorStableId) const;
-        [[nodiscard]] core::Workspace &WorkspaceAt(size_t index);         // global index into GetWorkspaces()
+        [[nodiscard]] core::Workspace &WorkspaceAt(size_t index); // global index into GetWorkspaces()
         [[nodiscard]] std::vector<core::MonitorInfo> GetMonitors() const;
         [[nodiscard]] core::WindowInfo GetForegroundWindowInfo() const;
         [[nodiscard]] std::optional<core::WindowInfo> GetLastFocusedWindowInfo() const;
@@ -126,8 +116,7 @@ namespace flowspace::engine
 
         bool IsBusy() const { return switchInProgress_; }
 
-    private:
-        // --- switching internals ---
+      private:
         bool ApplySwitch(const std::wstring &monitorStableId, const std::string &workspaceId, SwitchResult &result);
         std::string ResolveAdjacentWorkspace(const std::wstring &monitorStableId, SwitchDirection direction) const;
         // Resolves a monitor the workspace manager actually knows about, using the
@@ -139,12 +128,12 @@ namespace flowspace::engine
         void HideWindowInternal(const core::WindowInfo &window, const std::string &workspaceId);
         void ShowWindowInternal(HWND hwnd, bool wasMinimized);
 
-        // --- window event internals ---
         void ProcessNewWindow(HWND hwnd);
         void ProcessShownWindow(HWND hwnd);
         void ProcessMovedWindow(HWND hwnd);
         bool MatchesRule(const core::WindowInfo &window, const core::AppRule &rule) const;
-        std::string ResolveAssignmentForNewWindow(const core::WindowInfo &window, const core::AppRule **matchedRule) const;
+        std::string ResolveAssignmentForNewWindow(const core::WindowInfo &window,
+                                                  const core::AppRule **matchedRule) const;
 
         platform::MonitorManager &monitors_;
         platform::WindowManager &windows_;

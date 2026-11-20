@@ -16,7 +16,8 @@ namespace flowspace::platform
             mi.cbSize = sizeof(MONITORINFOEXW);
             if (!GetMonitorInfoW(hMonitor, &mi))
             {
-                spdlog::warn("GetMonitorInfoW failed for monitor 0x{:X} (error {})", reinterpret_cast<uintptr_t>(hMonitor), GetLastError());
+                spdlog::warn("GetMonitorInfoW failed for monitor 0x{:X} (error {})",
+                             reinterpret_cast<uintptr_t>(hMonitor), GetLastError());
                 return TRUE; // Continue enumeration
             }
 
@@ -69,7 +70,8 @@ namespace flowspace::platform
             // Fallback if a virtual/headless display driver does not expose a CCD target device path
             if (monitor.stableId.empty())
             {
-                spdlog::warn("Falling back to GDI device name for monitor '{}'", std::string(monitor.deviceName.begin(), monitor.deviceName.end()));
+                spdlog::warn("Falling back to GDI device name for monitor '{}'",
+                             std::string(monitor.deviceName.begin(), monitor.deviceName.end()));
                 monitor.stableId = monitor.deviceName;
             }
 
@@ -80,11 +82,15 @@ namespace flowspace::platform
         }
 
         // Sort deterministically: primary monitor first, then left-to-right, top-to-bottom
-        std::sort(monitors.begin(), monitors.end(), [](const core::MonitorInfo &a, const core::MonitorInfo &b)
+        std::sort(monitors.begin(), monitors.end(),
+                  [](const core::MonitorInfo &a, const core::MonitorInfo &b)
                   {
-            if(a.isPrimary != b.isPrimary) return a.isPrimary > b.isPrimary; 
-            if (a.bounds.left != b.bounds.left) return a.bounds.left < b.bounds.left;
-            return a.bounds.top < b.bounds.top; });
+                      if (a.isPrimary != b.isPrimary)
+                          return a.isPrimary > b.isPrimary;
+                      if (a.bounds.left != b.bounds.left)
+                          return a.bounds.left < b.bounds.left;
+                      return a.bounds.top < b.bounds.top;
+                  });
 
         return monitors;
     }
@@ -160,7 +166,8 @@ namespace flowspace::platform
         return std::nullopt;
     }
 
-    std::optional<MonitorManager::DisplayTargetMetadata> MonitorManager::QueryTargetMetadata(const std::wstring &gdiDeviceName) const
+    std::optional<MonitorManager::DisplayTargetMetadata>
+    MonitorManager::QueryTargetMetadata(const std::wstring &gdiDeviceName) const
     {
         UINT32 pathCount = 0; // Number of display paths
         UINT32 modeCount = 0; // Number of display modes

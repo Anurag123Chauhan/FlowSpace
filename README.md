@@ -73,16 +73,23 @@ Open Settings (`Ctrl+Alt+O` or tray → Open Settings) to:
 - Windows 10 (1903+) or Windows 11, x64
 - No administrator rights required
 
-## AI agent documentation
+## License
 
-FlowSpace maintains persistent AI context documentation under `.ai/` so a fresh coding session can understand the project without prior conversation history. Start with [`AGENTS.md`](AGENTS.md).
+FlowSpace is distributed under the MIT License; see [`LICENSE`](LICENSE).
+Third-party components retain their own licenses, listed in
+[`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt).
+
+## Engineering reference docs
+
+FlowSpace keeps its architecture, configuration, quality, and testing references in [`docs/engineering/`](docs/engineering/). Coding agents should also start with [`AGENTS.md`](AGENTS.md).
 
 | File | Purpose |
 |------|---------|
 | `AGENTS.md` | Primary instructions for AI coding agents (read first) |
-| `.ai/ARCHITECTURE.md` | Module responsibilities, Windows APIs, data flow |
-| `.ai/CONFIGURATION.md` | `config.json` schema reference |
-| `.ai/TESTING.md` | Manual integration test checklist |
+| [`ARCHITECTURE.md`](docs/engineering/ARCHITECTURE.md) | Module responsibilities, Windows APIs, data flow |
+| [`CODE_QUALITY.md`](docs/engineering/CODE_QUALITY.md) | C++ conventions and cleanup guidance |
+| [`CONFIGURATION.md`](docs/engineering/CONFIGURATION.md) | `config.json` schema reference |
+| [`TESTING.md`](docs/engineering/TESTING.md) | Manual integration test checklist |
 
 See [`AGENTS.md`](AGENTS.md) for the mandatory agent workflow.
 

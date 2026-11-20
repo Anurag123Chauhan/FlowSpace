@@ -19,5 +19,6 @@ namespace flowspace::ui::visual
     // Finishes a 32bpp top-down DIB: rounds the card corners, draws a 1px border,
     // adds a soft drop shadow and premultiplies alpha for UpdateLayeredWindow.
     // The card area must already be filled with opaque pixels before this call.
-    void ApplyCardAlpha(uint32_t *pixels, int width, int height, const RECT &card, int radius, int shadowMargin, int panelAlpha, double scale, COLORREF border);
+    void ApplyCardAlpha(uint32_t *pixels, int width, int height, const RECT &card, int radius, int shadowMargin,
+                        int panelAlpha, double scale, COLORREF border);
 }

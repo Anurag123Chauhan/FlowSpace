@@ -10,15 +10,15 @@ namespace flowspace::ui
     // consistent with the settings window.
     namespace Theme
     {
-        constexpr COLORREF Bg = RGB(26, 26, 26);           // #1A1A1A main background
-        constexpr COLORREF Sidebar = RGB(22, 22, 22);      // #161616 panel surface
-        constexpr COLORREF Card = RGB(34, 34, 34);         // #222222 card / row surface
-        constexpr COLORREF CardHover = RGB(46, 46, 46);    // #2E2E2E hover
-        constexpr COLORREF Border = RGB(58, 58, 58);       // #3A3A3A neutral grey border
-        constexpr COLORREF Text = RGB(232, 232, 232);      // #E8E8E8 primary text
-        constexpr COLORREF TextDim = RGB(154, 154, 154);   // #9A9A9A secondary text
-        constexpr COLORREF Input = RGB(38, 38, 38);        // input field background
-        constexpr COLORREF Accent = RGB(168, 126, 90);     // #A87E5A muted bronze
+        constexpr COLORREF Bg = RGB(26, 26, 26);         // #1A1A1A main background
+        constexpr COLORREF Sidebar = RGB(22, 22, 22);    // #161616 panel surface
+        constexpr COLORREF Card = RGB(34, 34, 34);       // #222222 card / row surface
+        constexpr COLORREF CardHover = RGB(46, 46, 46);  // #2E2E2E hover
+        constexpr COLORREF Border = RGB(58, 58, 58);     // #3A3A3A neutral grey border
+        constexpr COLORREF Text = RGB(232, 232, 232);    // #E8E8E8 primary text
+        constexpr COLORREF TextDim = RGB(154, 154, 154); // #9A9A9A secondary text
+        constexpr COLORREF Input = RGB(38, 38, 38);      // input field background
+        constexpr COLORREF Accent = RGB(168, 126, 90);   // #A87E5A muted bronze
 
         // Workspace accent colors offered by the picker. Softer, less saturated presets.
         inline constexpr const wchar_t *kAccentPresets[] = {
@@ -51,20 +51,13 @@ namespace flowspace::ui
 
         // NOTE: glyphs are Segoe MDL2 Assets codepoints.
         inline constexpr IconDef kIcons[] = {
-            {L"grid", L"Grid", 0xE8A9},
-            {L"code", L"Code", 0xE943},
-            {L"book", L"Research", 0xE736},
-            {L"home", L"Home", 0xE80F + 0}, // Home
-            {L"chat", L"Communication", 0xE8BD},
-            {L"mail", L"Mail", 0xE715},
-            {L"globe", L"Web", 0xE774},
-            {L"star", L"Favorites", 0xE735},
-            {L"music", L"Music", 0xE8D6},
-            {L"video", L"Entertainment", 0xE786},
-            {L"briefcase", L"Work", 0xE7E9},
-            {L"camera", L"Photos", 0xE722},
-            {L"gamepad", L"Games", 0xE7FC},
-            {L"chart", L"Monitoring", 0xE9D2},
+            {L"grid", L"Grid", 0xE8A9},          {L"code", L"Code", 0xE943},
+            {L"book", L"Research", 0xE736},      {L"home", L"Home", 0xE80F + 0}, // Home
+            {L"chat", L"Communication", 0xE8BD}, {L"mail", L"Mail", 0xE715},
+            {L"globe", L"Web", 0xE774},          {L"star", L"Favorites", 0xE735},
+            {L"music", L"Music", 0xE8D6},        {L"video", L"Entertainment", 0xE786},
+            {L"briefcase", L"Work", 0xE7E9},     {L"camera", L"Photos", 0xE722},
+            {L"gamepad", L"Games", 0xE7FC},      {L"chart", L"Monitoring", 0xE9D2},
             {L"doc", L"Documentation", 0xE8A5},
         };
 

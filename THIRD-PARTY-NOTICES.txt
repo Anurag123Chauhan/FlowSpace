@@ -9,6 +9,16 @@ Copyright (c) 2016-present, Gabi Melman and spdlog contributors.
 License: MIT
 
 The complete spdlog license is included in licenses\spdlog-LICENSE.
+In the source tree, see external\spdlog\LICENSE.
+
+{fmt} (bundled with spdlog)
+--------------------------
+Copyright (c) 2012-present, Victor Zverovich and {fmt} contributors.
+License: MIT with an additional redistribution exception.
+
+The complete license and exception are included in licenses\fmt-LICENSE in
+release packages. In the source tree, see
+external\spdlog\include\spdlog\fmt\bundled\fmt.license.rst.
 
 nlohmann/json
 -------------
@@ -18,6 +28,8 @@ License: MIT
 nlohmann/json is distributed as the single-header file
 external\nlohmann\json.hpp in the source repository. Its MIT license applies
 to that bundled component.
+
+The following is the complete MIT license for nlohmann/json:
 
 The MIT License (MIT)
 

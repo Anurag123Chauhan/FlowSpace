@@ -6,14 +6,11 @@
 
 namespace flowspace::ui
 {
-    /// <summary>
-    /// System tray icon with a context menu (open settings, per-monitor workspace switching,
-    /// reveal all, pause, restart engine, exit). The callback message is
-    /// delivered to the app's message window, keeping tray handling on the main thread.
-    /// </summary>
+    /// Shows the tray icon and menu for settings, workspace switching, and app actions.
+    /// Menu events are handled by the app's main message window.
     class TrayIcon
     {
-    public:
+      public:
         // id = tray callback message id; menuIdBase = first command id for generated menu items.
         void Initialize(HWND messageWindow, UINT callbackMessage, UINT menuIdBase);
         void Shutdown();
@@ -21,14 +18,12 @@ namespace flowspace::ui
         // Adds the icon; existing icon is replaced on re-call (e.g. pause state change).
         bool Update(bool paused);
 
-        // Called by the message window on the tray callback message:
-        // returns the selected menu command id (0 when the menu was dismissed), or
-        // -1 when the event was a plain left-click (settings open).
+        // Returns the selected command, 0 if dismissed, or -1 for a left-click.
         int HandleCallbackMessage(LPARAM lParam);
 
         void SetWorkspaceMenuBuilder(std::function<void(HMENU)> builder) { workspaceMenuBuilder_ = std::move(builder); }
 
-    private:
+      private:
         HWND window_ = nullptr;
         UINT callbackMessage_ = 0;
         UINT menuIdBase_ = 0;

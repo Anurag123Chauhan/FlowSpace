@@ -15,12 +15,8 @@ namespace flowspace::platform
             UINT mod;
         };
         constexpr ModifierPart kModifiers[] = {
-            {L"Ctrl", MOD_CONTROL},
-            {L"Control", MOD_CONTROL},
-            {L"Alt", MOD_ALT},
-            {L"Shift", MOD_SHIFT},
-            {L"Win", MOD_WIN},
-            {L"Windows", MOD_WIN},
+            {L"Ctrl", MOD_CONTROL}, {L"Control", MOD_CONTROL}, {L"Alt", MOD_ALT},
+            {L"Shift", MOD_SHIFT},  {L"Win", MOD_WIN},         {L"Windows", MOD_WIN},
         };
 
         struct KeyPart
@@ -30,23 +26,70 @@ namespace flowspace::platform
         };
         // Only keys that make sense as global hotkeys are nameable.
         constexpr KeyPart kKeys[] = {
-            {L"Left", VK_LEFT}, {L"Right", VK_RIGHT}, {L"Up", VK_UP}, {L"Down", VK_DOWN},
-            {L"Space", VK_SPACE}, {L"Tab", VK_TAB}, {L"Back", VK_BACK},
-            {L"D0", '0'}, {L"D1", '1'}, {L"D2", '2'}, {L"D3", '3'}, {L"D4", '4'},
-            {L"D5", '5'}, {L"D6", '6'}, {L"D7", '7'}, {L"D8", '8'}, {L"D9", '9'},
-            {L"F1", VK_F1}, {L"F2", VK_F2}, {L"F3", VK_F3}, {L"F4", VK_F4},
-            {L"F5", VK_F5}, {L"F6", VK_F6}, {L"F7", VK_F7}, {L"F8", VK_F8},
-            {L"F9", VK_F9}, {L"F10", VK_F10}, {L"F11", VK_F11}, {L"F12", VK_F12},
-            {L"Home", VK_HOME}, {L"End", VK_END}, {L"Insert", VK_INSERT},
-            {L"PageUp", VK_PRIOR}, {L"PageDown", VK_NEXT},
-            {L"OemComma", VK_OEM_COMMA}, {L"OemPeriod", VK_OEM_PERIOD},
-            {L"Minus", VK_OEM_MINUS}, {L"Plus", VK_OEM_PLUS},
+            {L"Left", VK_LEFT},
+            {L"Right", VK_RIGHT},
+            {L"Up", VK_UP},
+            {L"Down", VK_DOWN},
+            {L"Space", VK_SPACE},
+            {L"Tab", VK_TAB},
+            {L"Back", VK_BACK},
+            {L"D0", '0'},
+            {L"D1", '1'},
+            {L"D2", '2'},
+            {L"D3", '3'},
+            {L"D4", '4'},
+            {L"D5", '5'},
+            {L"D6", '6'},
+            {L"D7", '7'},
+            {L"D8", '8'},
+            {L"D9", '9'},
+            {L"F1", VK_F1},
+            {L"F2", VK_F2},
+            {L"F3", VK_F3},
+            {L"F4", VK_F4},
+            {L"F5", VK_F5},
+            {L"F6", VK_F6},
+            {L"F7", VK_F7},
+            {L"F8", VK_F8},
+            {L"F9", VK_F9},
+            {L"F10", VK_F10},
+            {L"F11", VK_F11},
+            {L"F12", VK_F12},
+            {L"Home", VK_HOME},
+            {L"End", VK_END},
+            {L"Insert", VK_INSERT},
+            {L"PageUp", VK_PRIOR},
+            {L"PageDown", VK_NEXT},
+            {L"OemComma", VK_OEM_COMMA},
+            {L"OemPeriod", VK_OEM_PERIOD},
+            {L"Minus", VK_OEM_MINUS},
+            {L"Plus", VK_OEM_PLUS},
             // Letters and common punctuation used by defaults like Ctrl+Alt+O (OpenSettings).
-            {L"A", 'A'}, {L"B", 'B'}, {L"C", 'C'}, {L"D", 'D'}, {L"E", 'E'},
-            {L"F", 'F'}, {L"G", 'G'}, {L"H", 'H'}, {L"I", 'I'}, {L"J", 'J'},
-            {L"K", 'K'}, {L"L", 'L'}, {L"M", 'M'}, {L"N", 'N'}, {L"O", 'O'},
-            {L"P", 'P'}, {L"Q", 'Q'}, {L"R", 'R'}, {L"S", 'S'}, {L"T", 'T'},
-            {L"U", 'U'}, {L"V", 'V'}, {L"W", 'W'}, {L"X", 'X'}, {L"Y", 'Y'},
+            {L"A", 'A'},
+            {L"B", 'B'},
+            {L"C", 'C'},
+            {L"D", 'D'},
+            {L"E", 'E'},
+            {L"F", 'F'},
+            {L"G", 'G'},
+            {L"H", 'H'},
+            {L"I", 'I'},
+            {L"J", 'J'},
+            {L"K", 'K'},
+            {L"L", 'L'},
+            {L"M", 'M'},
+            {L"N", 'N'},
+            {L"O", 'O'},
+            {L"P", 'P'},
+            {L"Q", 'Q'},
+            {L"R", 'R'},
+            {L"S", 'S'},
+            {L"T", 'T'},
+            {L"U", 'U'},
+            {L"V", 'V'},
+            {L"W", 'W'},
+            {L"X", 'X'},
+            {L"Y", 'Y'},
             {L"Z", 'Z'},
         };
     }
@@ -138,7 +181,8 @@ namespace flowspace::platform
         return result;
     }
 
-    std::vector<std::wstring> HotkeyManager::RegisterAll(HWND messageWindow, const std::vector<core::HotkeyBinding> &bindings)
+    std::vector<std::wstring> HotkeyManager::RegisterAll(HWND messageWindow,
+                                                         const std::vector<core::HotkeyBinding> &bindings)
     {
         UnregisterAll();
         window_ = messageWindow;
@@ -185,8 +229,8 @@ namespace flowspace::platform
                 continue;
             }
             const UINT mod = ParseModifiers(binding.modifiers);
-            const bool numeric = binding.action == core::HotkeyAction::SwitchToWorkspaceByNumber
-                              || binding.action == core::HotkeyAction::MoveActiveWindowToWorkspaceByNumber;
+            const bool numeric = binding.action == core::HotkeyAction::SwitchToWorkspaceByNumber ||
+                                 binding.action == core::HotkeyAction::MoveActiveWindowToWorkspaceByNumber;
 
             if (numeric)
             {
@@ -205,7 +249,8 @@ namespace flowspace::platform
                         c.action = binding.action;
                         c.numericIndex = n;
                     }
-                    c.sources.push_back(Source{binding.action, n, Describe(binding) + L"[" + std::to_wstring(n) + L"]"});
+                    c.sources.push_back(
+                        Source{binding.action, n, Describe(binding) + L"[" + std::to_wstring(n) + L"]"});
                 }
             }
             else
@@ -213,7 +258,8 @@ namespace flowspace::platform
                 const UINT vk = ParseKey(binding.key);
                 if (vk == 0)
                 {
-                    spdlog::warn("Hotkey with unknown key name '{}' skipped", std::string(binding.key.begin(), binding.key.end()));
+                    spdlog::warn("Hotkey with unknown key name '{}' skipped",
+                                 std::string(binding.key.begin(), binding.key.end()));
                     continue;
                 }
                 auto &c = findOrAdd(mod, vk);
@@ -243,8 +289,8 @@ namespace flowspace::platform
             }
             if (distinct)
             {
-                std::wstring text = L"Conflicting shortcut: " + std::to_wstring(c.sources.size())
-                                  + L" bindings want the same key combination. None were registered.";
+                std::wstring text = L"Conflicting shortcut: " + std::to_wstring(c.sources.size()) +
+                                    L" bindings want the same key combination. None were registered.";
                 conflicts.push_back(text);
                 continue;
             }
@@ -256,8 +302,8 @@ namespace flowspace::platform
             }
             else
             {
-                conflicts.push_back(L"Shortcut registration failed (already used by another program): "
-                                    + Describe(core::HotkeyBinding{c.action, true, L"", KeyName(c.vk)}));
+                conflicts.push_back(L"Shortcut registration failed (already used by another program): " +
+                                    Describe(core::HotkeyBinding{c.action, true, L"", KeyName(c.vk)}));
             }
         }
 

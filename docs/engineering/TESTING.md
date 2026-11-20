@@ -86,3 +86,7 @@ so you can verify restore-on-exit.
 
 - [ ] `build\cmake\flowspace-diag.exe` prints monitor and manageable-window reports and
       exits 0 without touching any state.
+
+## Release workflow
+
+Tag pushes and manual runs start `.github/workflows/release.yml`; only tags publish a GitHub release. CI builds and tests the app, creates the ZIP and installer with `scripts/package-release.ps1`, verifies both packages, and tests installer/uninstaller behavior.

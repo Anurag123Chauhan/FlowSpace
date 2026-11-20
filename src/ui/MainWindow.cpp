@@ -32,15 +32,15 @@ namespace flowspace::ui
         constexpr wchar_t GlyphNavRecovery = 0xE81C;   // history / journal
         constexpr wchar_t GlyphNavAbout = 0xE946;      // info
 
-        constexpr wchar_t GlyphWs = 0xE80F;        // home
-        constexpr wchar_t GlyphMonitor = 0xE7F4;   // TV monitor
-        constexpr wchar_t GlyphPlus = 0xE710;      // add
-        constexpr wchar_t GlyphDelete = 0xE74D;    // delete
-        constexpr wchar_t GlyphReveal = 0xE8A7;    // open in new window
-        constexpr wchar_t GlyphApp = 0xE71D;       // all apps
-        constexpr wchar_t GlyphWarning = 0xE7BA;   // warning
-        constexpr wchar_t GlyphCheck = 0xE73E;     // check mark
-        constexpr wchar_t GlyphMore = 0xE712;      // more (ellipsis)
+        constexpr wchar_t GlyphWs = 0xE80F;      // home
+        constexpr wchar_t GlyphMonitor = 0xE7F4; // TV monitor
+        constexpr wchar_t GlyphPlus = 0xE710;    // add
+        constexpr wchar_t GlyphDelete = 0xE74D;  // delete
+        constexpr wchar_t GlyphReveal = 0xE8A7;  // open in new window
+        constexpr wchar_t GlyphApp = 0xE71D;     // all apps
+        constexpr wchar_t GlyphWarning = 0xE7BA; // warning
+        constexpr wchar_t GlyphCheck = 0xE73E;   // check mark
+        constexpr wchar_t GlyphMore = 0xE712;    // more (ellipsis)
 
         // Hotspot ids.
         constexpr int HS_NAV = 100;
@@ -79,30 +79,41 @@ namespace flowspace::ui
         };
 
         constexpr wchar_t kNavLabels[][24] = {
-            L"Overview", L"Workspaces", L"Monitors", L"Shortcuts",
-            L"Behavior", L"App Rules", L"Recovery", L"About",
+            L"Overview", L"Workspaces", L"Monitors", L"Shortcuts", L"Behavior", L"App Rules", L"Recovery", L"About",
         };
 
         constexpr wchar_t kNavGlyphs[] = {
             GlyphNavOverview, GlyphNavWorkspaces, GlyphNavMonitors, GlyphNavShortcuts,
-            GlyphNavBehavior, GlyphNavRules, GlyphNavRecovery, GlyphNavAbout,
+            GlyphNavBehavior, GlyphNavRules,      GlyphNavRecovery, GlyphNavAbout,
         };
 
-        COLORREF WsAccent(const core::Workspace &ws) { return Theme::FromHex(core::Utf8ToWide(ws.accentColor)); }
+        COLORREF WsAccent(const core::Workspace &ws)
+        {
+            return Theme::FromHex(core::Utf8ToWide(ws.accentColor));
+        }
 
         std::wstring ActionName(core::HotkeyAction action)
         {
             switch (action)
             {
-            case core::HotkeyAction::PreviousWorkspace: return L"Previous workspace";
-            case core::HotkeyAction::NextWorkspace: return L"Next workspace";
-            case core::HotkeyAction::SwitchToWorkspaceByNumber: return L"Switch to workspace (number)";
-            case core::HotkeyAction::MoveActiveWindowToPreviousWorkspace: return L"Move window to previous workspace";
-            case core::HotkeyAction::MoveActiveWindowToNextWorkspace: return L"Move window to next workspace";
-            case core::HotkeyAction::MoveActiveWindowToWorkspaceByNumber: return L"Move window to workspace (number)";
-            case core::HotkeyAction::OpenWorkspaceSwitcher: return L"Open workspace switcher";
-            case core::HotkeyAction::RevealAllWindows: return L"Reveal all windows";
-            case core::HotkeyAction::OpenSettings: return L"Open settings";
+                case core::HotkeyAction::PreviousWorkspace:
+                    return L"Previous workspace";
+                case core::HotkeyAction::NextWorkspace:
+                    return L"Next workspace";
+                case core::HotkeyAction::SwitchToWorkspaceByNumber:
+                    return L"Switch to workspace (number)";
+                case core::HotkeyAction::MoveActiveWindowToPreviousWorkspace:
+                    return L"Move window to previous workspace";
+                case core::HotkeyAction::MoveActiveWindowToNextWorkspace:
+                    return L"Move window to next workspace";
+                case core::HotkeyAction::MoveActiveWindowToWorkspaceByNumber:
+                    return L"Move window to workspace (number)";
+                case core::HotkeyAction::OpenWorkspaceSwitcher:
+                    return L"Open workspace switcher";
+                case core::HotkeyAction::RevealAllWindows:
+                    return L"Reveal all windows";
+                case core::HotkeyAction::OpenSettings:
+                    return L"Open settings";
             }
             return L"Unknown action";
         }
@@ -168,12 +179,10 @@ namespace flowspace::ui
         wc.hbrBackground = nullptr; // fully custom painted (double buffered)
         // Use the embedded FlowSpace icon (resource ID 1) for the title bar,
         // taskbar and Alt+Tab instead of the generic application icon.
-        wc.hIcon = static_cast<HICON>(LoadImageW(instance, MAKEINTRESOURCEW(1), IMAGE_ICON,
-                                                GetSystemMetrics(SM_CXICON),
-                                                GetSystemMetrics(SM_CYICON), 0));
+        wc.hIcon = static_cast<HICON>(LoadImageW(instance, MAKEINTRESOURCEW(1), IMAGE_ICON, GetSystemMetrics(SM_CXICON),
+                                                 GetSystemMetrics(SM_CYICON), 0));
         wc.hIconSm = static_cast<HICON>(LoadImageW(instance, MAKEINTRESOURCEW(1), IMAGE_ICON,
-                                                  GetSystemMetrics(SM_CXSMICON),
-                                                  GetSystemMetrics(SM_CYSMICON), 0));
+                                                   GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0));
         RegisterClassExW(&wc);
     }
 
@@ -190,10 +199,8 @@ namespace flowspace::ui
         instance_->ctx_ = std::move(context);
         instance_->ApplySystemTheme();
 
-        instance_->hwnd_ = CreateWindowExW(0, kClassName, L"FlowSpace Settings",
-                                           WS_OVERLAPPEDWINDOW,
-                                           CW_USEDEFAULT, CW_USEDEFAULT, 1120, 760,
-                                           nullptr, nullptr, instance, instance_);
+        instance_->hwnd_ = CreateWindowExW(0, kClassName, L"FlowSpace Settings", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+                                           CW_USEDEFAULT, 1120, 760, nullptr, nullptr, instance, instance_);
         if (instance_->hwnd_)
         {
             // The window handle only exists now, so match the native frame here
@@ -296,102 +303,102 @@ namespace flowspace::ui
     {
         switch (msg)
         {
-        case WM_CREATE:
-        {
-            const UINT dpi = GetDpiForWindow(hwnd_);
-            if (dpi > 0)
+            case WM_CREATE:
             {
-                theme_.SetDpiScale(static_cast<double>(dpi) / 96.0);
-            }
-            theme_.SetMode(ThemeMode::System);
-            ApplyNativeTitleBar(hwnd_, theme_.Tokens(), theme_.EffectiveMode() == ThemeMode::Dark);
-            return 0;
-        }
-        case WM_ERASEBKGND:
-            return 1; // the back buffer paints every pixel
-        case WM_SIZE:
-            clientWidth_ = LOWORD(lParam);
-            clientHeight_ = HIWORD(lParam);
-            InvalidateRect(hwnd_, nullptr, FALSE);
-            return 0;
-        case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC dc = BeginPaint(hwnd_, &ps);
-            Paint(dc);
-            EndPaint(hwnd_, &ps);
-            return 0;
-        }
-        case WM_GETMINMAXINFO:
-        {
-            auto *mmi = reinterpret_cast<MINMAXINFO *>(lParam);
-            const UINT dpi = GetDpiForWindow(hwnd_);
-            const int minW = MulDiv(860, dpi ? dpi : 96, 96);
-            const int minH = MulDiv(580, dpi ? dpi : 96, 96);
-            mmi->ptMinTrackSize = {minW, minH};
-            return 0;
-        }
-        case WM_LBUTTONDOWN:
-            SetCapture(hwnd_);
-            return 0;
-        case WM_LBUTTONUP:
-        {
-            ReleaseCapture();
-            if (OnClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)))
-            {
-                InvalidateRect(hwnd_, nullptr, FALSE);
-            }
-            return 0;
-        }
-        case WM_MOUSEMOVE:
-            OnMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-            break;
-        case WM_MOUSELEAVE:
-            OnMouseLeave();
-            break;
-        case WM_MOUSEWHEEL:
-            OnMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam));
-            return 0;
-        case WM_KEYDOWN:
-            if (renaming_)
-            {
-                if (HandleRenameKey(wParam, 0)) InvalidateRect(hwnd_, nullptr, FALSE);
+                const UINT dpi = GetDpiForWindow(hwnd_);
+                if (dpi > 0)
+                {
+                    theme_.SetDpiScale(static_cast<double>(dpi) / 96.0);
+                }
+                theme_.SetMode(ThemeMode::System);
+                ApplyNativeTitleBar(hwnd_, theme_.Tokens(), theme_.EffectiveMode() == ThemeMode::Dark);
                 return 0;
             }
-            if (capturing_ && HandleCaptureKey(wParam))
+            case WM_ERASEBKGND:
+                return 1; // the back buffer paints every pixel
+            case WM_SIZE:
+                clientWidth_ = LOWORD(lParam);
+                clientHeight_ = HIWORD(lParam);
+                InvalidateRect(hwnd_, nullptr, FALSE);
+                return 0;
+            case WM_PAINT:
             {
+                PAINTSTRUCT ps;
+                HDC dc = BeginPaint(hwnd_, &ps);
+                Paint(dc);
+                EndPaint(hwnd_, &ps);
+                return 0;
+            }
+            case WM_GETMINMAXINFO:
+            {
+                auto *mmi = reinterpret_cast<MINMAXINFO *>(lParam);
+                const UINT dpi = GetDpiForWindow(hwnd_);
+                const int minW = MulDiv(860, dpi ? dpi : 96, 96);
+                const int minH = MulDiv(580, dpi ? dpi : 96, 96);
+                mmi->ptMinTrackSize = {minW, minH};
+                return 0;
+            }
+            case WM_LBUTTONDOWN:
+                SetCapture(hwnd_);
+                return 0;
+            case WM_LBUTTONUP:
+            {
+                ReleaseCapture();
+                if (OnClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)))
+                {
+                    InvalidateRect(hwnd_, nullptr, FALSE);
+                }
+                return 0;
+            }
+            case WM_MOUSEMOVE:
+                OnMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+                break;
+            case WM_MOUSELEAVE:
+                OnMouseLeave();
+                break;
+            case WM_MOUSEWHEEL:
+                OnMouseWheel(GET_WHEEL_DELTA_WPARAM(wParam));
+                return 0;
+            case WM_KEYDOWN:
+                if (renaming_)
+                {
+                    if (HandleRenameKey(wParam, 0))
+                        InvalidateRect(hwnd_, nullptr, FALSE);
+                    return 0;
+                }
+                if (capturing_ && HandleCaptureKey(wParam))
+                {
+                    InvalidateRect(hwnd_, nullptr, FALSE);
+                    return 0;
+                }
+                if (wParam == VK_ESCAPE)
+                {
+                    ShowWindow(hwnd_, SW_HIDE);
+                    return 0;
+                }
+                break;
+            case WM_CHAR:
+                if (renaming_ && HandleRenameKey(0, wParam))
+                {
+                    InvalidateRect(hwnd_, nullptr, FALSE);
+                }
+                return 0;
+            case WM_DPICHANGED:
+            {
+                const UINT dpi = HIWORD(wParam);
+                theme_.SetDpiScale(dpi > 0 ? static_cast<double>(dpi) / 96.0 : 1.0);
+                auto *suggested = reinterpret_cast<RECT *>(lParam);
+                SetWindowPos(hwnd_, nullptr, suggested->left, suggested->top, suggested->right - suggested->left,
+                             suggested->bottom - suggested->top, SWP_NOZORDER | SWP_NOACTIVATE);
                 InvalidateRect(hwnd_, nullptr, FALSE);
                 return 0;
             }
-            if (wParam == VK_ESCAPE)
-            {
-                ShowWindow(hwnd_, SW_HIDE);
+            case WM_SETTINGCHANGE:
+                ApplySystemTheme();
                 return 0;
-            }
-            break;
-        case WM_CHAR:
-            if (renaming_ && HandleRenameKey(0, wParam))
-            {
-                InvalidateRect(hwnd_, nullptr, FALSE);
-            }
-            return 0;
-        case WM_DPICHANGED:
-        {
-            const UINT dpi = HIWORD(wParam);
-            theme_.SetDpiScale(dpi > 0 ? static_cast<double>(dpi) / 96.0 : 1.0);
-            auto *suggested = reinterpret_cast<RECT *>(lParam);
-            SetWindowPos(hwnd_, nullptr, suggested->left, suggested->top,
-                         suggested->right - suggested->left, suggested->bottom - suggested->top,
-                         SWP_NOZORDER | SWP_NOACTIVATE);
-            InvalidateRect(hwnd_, nullptr, FALSE);
-            return 0;
-        }
-        case WM_SETTINGCHANGE:
-            ApplySystemTheme();
-            return 0;
-        case WM_CLOSE:
-            DestroyWindow(hwnd_);
-            return 0;
+            case WM_CLOSE:
+                DestroyWindow(hwnd_);
+                return 0;
         }
         return DefWindowProcW(hwnd_, msg, wParam, lParam);
     }
@@ -462,23 +469,40 @@ namespace flowspace::ui
         Draw::Text(dc, kPages[pageIndex].title, {rect.left, rect.top, rect.right, rect.top + theme_.Px(32)},
                    theme_.TitleFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
         Draw::Text(dc, kPages[pageIndex].description,
-                   {rect.left, rect.top + theme_.Px(34), rect.right, rect.top + theme_.Px(54)},
-                   theme_.SmallFont(), t.textDim, DT_LEFT | DT_TOP | DT_SINGLELINE);
+                   {rect.left, rect.top + theme_.Px(34), rect.right, rect.top + theme_.Px(54)}, theme_.SmallFont(),
+                   t.textDim, DT_LEFT | DT_TOP | DT_SINGLELINE);
     }
 
     void MainWindow::PaintPage(HDC dc, int pageIndex, const RECT &body)
     {
         switch (pageIndex)
         {
-        case 0: PaintPageOverview(dc, body); break;
-        case 1: PaintPageWorkspaces(dc, body); break;
-        case 2: PaintPageMonitors(dc, body); break;
-        case 3: PaintPageShortcuts(dc, body); break;
-        case 4: PaintPageBehavior(dc, body); break;
-        case 5: PaintPageAppRules(dc, body); break;
-        case 6: PaintPageRecovery(dc, body); break;
-        case 7: PaintPageAbout(dc, body); break;
-        default: break;
+            case 0:
+                PaintPageOverview(dc, body);
+                break;
+            case 1:
+                PaintPageWorkspaces(dc, body);
+                break;
+            case 2:
+                PaintPageMonitors(dc, body);
+                break;
+            case 3:
+                PaintPageShortcuts(dc, body);
+                break;
+            case 4:
+                PaintPageBehavior(dc, body);
+                break;
+            case 5:
+                PaintPageAppRules(dc, body);
+                break;
+            case 6:
+                PaintPageRecovery(dc, body);
+                break;
+            case 7:
+                PaintPageAbout(dc, body);
+                break;
+            default:
+                break;
         }
 
         if (renaming_ && renameIndex_ >= 0 && pageIndex == 1 && renameRect_.right > renameRect_.left)
@@ -504,8 +528,7 @@ namespace flowspace::ui
         }
         const int thumbHeight = std::max(theme_.Px(28), trackHeight * viewHeight / pageContentHeight_);
         const int thumbTop = trackTop + (trackHeight - thumbHeight) * scrollOffset_ / std::max(1, maxScroll);
-        RECT thumb{viewport.right + theme_.Px(6), thumbTop,
-                   viewport.right + theme_.Px(10), thumbTop + thumbHeight};
+        RECT thumb{viewport.right + theme_.Px(6), thumbTop, viewport.right + theme_.Px(10), thumbTop + thumbHeight};
         Draw::RoundRect(dc, thumb, theme_.Px(2), theme_.Tokens().border, theme_.Tokens().border, 1);
     }
 
@@ -517,7 +540,10 @@ namespace flowspace::ui
     void MainWindow::PaintNav(HDC dc, const RECT &client)
     {
         const auto &t = theme_.Tokens();
-        auto px = [&](int v) { return theme_.Px(v); };
+        auto px = [&](int v)
+        {
+            return theme_.Px(v);
+        };
 
         RECT nav{client.left, client.top, client.left + theme_.SidebarWidth(), client.bottom};
         Fill(dc, nav, t.sidebar);
@@ -546,8 +572,7 @@ namespace flowspace::ui
             RECT row{nav.left + px(10), y, nav.right - px(10), y + rowH};
             if (selected || hovered)
             {
-                Draw::RoundRect(dc, row, px(6), selected ? t.selected : t.hover,
-                                selected ? t.selected : t.hover, 1);
+                Draw::RoundRect(dc, row, px(6), selected ? t.selected : t.hover, selected ? t.selected : t.hover, 1);
             }
             if (selected)
             {
@@ -563,7 +588,6 @@ namespace flowspace::ui
             y += rowH + rowGap;
         }
 
-        // Bottom status + version.
         RECT divider{nav.left + px(16), nav.bottom - px(58), nav.right - px(16), nav.bottom - px(57)};
         Components::Divider(dc, divider, theme_);
         const bool paused = ctx_.config->Get().settings.paused;
@@ -601,13 +625,14 @@ namespace flowspace::ui
         hotspots_.push_back({id, index, hit});
     }
 
-    // =======================================================================
-    // Page: Overview (operational dashboard)
-    // =======================================================================
+    // Overview page.
 
     void MainWindow::PaintPageOverview(HDC dc, const RECT &body)
     {
-        auto px = [&](int v) { return theme_.Px(v); };
+        auto px = [&](int v)
+        {
+            return theme_.Px(v);
+        };
         const auto &t = theme_.Tokens();
         const auto &workspaces = ctx_.engine->GetWorkspaces();
         const auto monitors = ctx_.engine->GetMonitors();
@@ -615,9 +640,8 @@ namespace flowspace::ui
         int y = body.top;
         const int width = body.right - body.left;
 
-        // --- Summary metrics ---
-        Draw::Text(dc, L"Summary", {body.left, y, body.right, y + px(22)},
-                   theme_.HeadingFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
+        Draw::Text(dc, L"Summary", {body.left, y, body.right, y + px(22)}, theme_.HeadingFont(), t.text,
+                   DT_LEFT | DT_TOP | DT_SINGLELINE);
         y += px(30);
 
         int activeCount = 0;
@@ -653,8 +677,7 @@ namespace flowspace::ui
             {L"Workspaces", std::to_wstring(totalWorkspaces), L"Total workspaces", GlyphWs,
              workspaces.empty() ? t.accent : WsAccent(workspaces.front())},
             {L"Monitors", std::to_wstring(monitors.size()), L"Connected displays", GlyphMonitor, t.accent},
-            {L"Active", std::to_wstring(activeCount), activeName, GlyphCheck,
-             activeCount > 0 ? t.success : t.textDim},
+            {L"Active", std::to_wstring(activeCount), activeName, GlyphCheck, activeCount > 0 ? t.success : t.textDim},
             {L"Shortcuts", std::to_wstring(ctx_.config->Get().hotkeys.size()), L"Configured bindings",
              GlyphNavShortcuts, t.accent},
         };
@@ -668,21 +691,23 @@ namespace flowspace::ui
         {
             const int col = i % columns;
             const int row = i / columns;
-            RECT card{body.left + col * (cardW + gap), y + row * (cardH + gap),
-                      body.left + col * (cardW + gap) + cardW, y + row * (cardH + gap) + cardH};
+            RECT card{body.left + col * (cardW + gap), y + row * (cardH + gap), body.left + col * (cardW + gap) + cardW,
+                      y + row * (cardH + gap) + cardH};
             Components::Card(dc, card, theme_, false, px(8));
-            Draw::Icon(dc, metrics[i].glyph, {card.left + px(16), card.top + px(14), card.left + px(40), card.top + px(38)},
+            Draw::Icon(dc, metrics[i].glyph,
+                       {card.left + px(16), card.top + px(14), card.left + px(40), card.top + px(38)},
                        theme_.IconFont(), metrics[i].accent);
-            Draw::Text(dc, metrics[i].value, {card.left + px(16), card.top + px(42), card.right - px(16), card.top + px(72)},
+            Draw::Text(dc, metrics[i].value,
+                       {card.left + px(16), card.top + px(42), card.right - px(16), card.top + px(72)},
                        theme_.TitleFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
-            Draw::Text(dc, metrics[i].sub, {card.left + px(16), card.top + px(74), card.right - px(16), card.top + px(96)},
+            Draw::Text(dc, metrics[i].sub,
+                       {card.left + px(16), card.top + px(74), card.right - px(16), card.top + px(96)},
                        theme_.SmallFont(), t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
         }
         y += rows * cardH + (rows - 1) * gap + px(kSectionGap96);
 
-        // --- Monitor overview ---
-        Draw::Text(dc, L"Monitors", {body.left, y, body.right, y + px(22)},
-                   theme_.HeadingFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
+        Draw::Text(dc, L"Monitors", {body.left, y, body.right, y + px(22)}, theme_.HeadingFont(), t.text,
+                   DT_LEFT | DT_TOP | DT_SINGLELINE);
         y += px(30);
 
         const int monRowH = px(58);
@@ -697,8 +722,8 @@ namespace flowspace::ui
             Draw::Text(dc, name, {row.left + px(46), row.top + px(9), row.right - px(190), row.top + px(30)},
                        theme_.BodyFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
             Draw::Text(dc, MonitorGeometry(mon),
-                       {row.left + px(46), row.top + px(30), row.right - px(190), row.top + px(48)},
-                       theme_.SmallFont(), t.textDim, DT_LEFT | DT_TOP | DT_SINGLELINE);
+                       {row.left + px(46), row.top + px(30), row.right - px(190), row.top + px(48)}, theme_.SmallFont(),
+                       t.textDim, DT_LEFT | DT_TOP | DT_SINGLELINE);
 
             const core::Workspace *monWs = FindWorkspace(workspaces, mon.activeWorkspaceId);
             const std::wstring chipLabel = monWs ? core::Utf8ToWide(monWs->name) : L"Unassigned";
@@ -729,15 +754,15 @@ namespace flowspace::ui
         {
             RECT empty{body.left, y, body.right, y + px(76)};
             Components::Card(dc, empty, theme_, false, px(8));
-            Draw::Text(dc, L"No monitors detected.", {empty.left + px(16), empty.top, empty.right - px(16), empty.bottom},
-                       theme_.BodyFont(), t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+            Draw::Text(dc, L"No monitors detected.",
+                       {empty.left + px(16), empty.top, empty.right - px(16), empty.bottom}, theme_.BodyFont(),
+                       t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
             y += px(76) + px(kRowGap96);
         }
         y += px(kSectionGap96 - kRowGap96);
 
-        // --- Quick actions ---
-        Draw::Text(dc, L"Quick actions", {body.left, y, body.right, y + px(22)},
-                   theme_.HeadingFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
+        Draw::Text(dc, L"Quick actions", {body.left, y, body.right, y + px(22)}, theme_.HeadingFont(), t.text,
+                   DT_LEFT | DT_TOP | DT_SINGLELINE);
         y += px(30);
 
         struct QuickAction
@@ -758,8 +783,8 @@ namespace flowspace::ui
         {
             const int col = i % actionCols;
             const int row = i / actionCols;
-            RECT btn{body.left + col * (actionW + gap), y + row * px(48),
-                     body.left + col * (actionW + gap) + actionW, y + row * px(48) + px(40)};
+            RECT btn{body.left + col * (actionW + gap), y + row * px(48), body.left + col * (actionW + gap) + actionW,
+                     y + row * px(48) + px(40)};
             const bool hovered = (hoveredId_ == HS_WS_ADD && hoveredIndex_ == i);
             Components::Button(dc, btn, theme_, actions[i].label, theme_.BodyFont(), hovered, false, i == 0);
             AddHotspot(HS_WS_ADD, i, btn);
@@ -768,13 +793,14 @@ namespace flowspace::ui
         SetContentEnd(y);
     }
 
-    // =======================================================================
-    // Page: Workspaces (compact list)
-    // =======================================================================
+    // Workspaces page.
 
     void MainWindow::PaintPageWorkspaces(HDC dc, const RECT &body)
     {
-        auto px = [&](int v) { return theme_.Px(v); };
+        auto px = [&](int v)
+        {
+            return theme_.Px(v);
+        };
         const auto &t = theme_.Tokens();
         const auto allWorkspaces = ctx_.engine->GetWorkspaces();
         const auto monitors = ctx_.engine->GetMonitors();
@@ -789,8 +815,8 @@ namespace flowspace::ui
         {
             RECT empty{body.left, y, body.right, y + px(120)};
             Components::Card(dc, empty, theme_, false, px(8));
-            Components::EmptyState(dc, {empty.left, empty.top + px(18), empty.right, empty.bottom - px(8)},
-                                   theme_, GlyphMonitor, L"No monitors detected",
+            Components::EmptyState(dc, {empty.left, empty.top + px(18), empty.right, empty.bottom - px(8)}, theme_,
+                                   GlyphMonitor, L"No monitors detected",
                                    L"Connect a display to manage its workspaces.");
             SetContentEnd(empty.bottom);
             return;
@@ -801,17 +827,15 @@ namespace flowspace::ui
             const auto &mon = monitors[m];
             const auto list = ctx_.engine->GetWorkspacesForMonitor(mon.stableId);
 
-            // --- Monitor header ---
             const std::wstring monName = (mon.isPrimary ? L"Primary \u00B7 " : L"") + MonitorName(mon);
-            Draw::Icon(dc, GlyphMonitor,
-                       {body.left + px(2), y + px(2), body.left + px(24), y + px(24)},
+            Draw::Icon(dc, GlyphMonitor, {body.left + px(2), y + px(2), body.left + px(24), y + px(24)},
                        theme_.IconFont(), mon.isPrimary ? t.accent : t.textDim);
-            Draw::Text(dc, monName, {body.left + px(30), y, body.right - px(150), y + px(26)},
-                       theme_.HeadingFont(), t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-            const std::wstring countLabel = std::to_wstring(list.size()) +
-                                            (list.size() == 1 ? L" workspace" : L" workspaces");
-            Draw::Text(dc, countLabel, {body.right - px(150), y, body.right, y + px(26)},
-                       theme_.SmallFont(), t.textDim, DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
+            Draw::Text(dc, monName, {body.left + px(30), y, body.right - px(150), y + px(26)}, theme_.HeadingFont(),
+                       t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+            const std::wstring countLabel =
+                std::to_wstring(list.size()) + (list.size() == 1 ? L" workspace" : L" workspaces");
+            Draw::Text(dc, countLabel, {body.right - px(150), y, body.right, y + px(26)}, theme_.SmallFont(), t.textDim,
+                       DT_RIGHT | DT_VCENTER | DT_SINGLELINE);
             y += px(32);
 
             for (size_t w = 0; w < list.size(); ++w)
@@ -832,15 +856,14 @@ namespace flowspace::ui
                 Components::Card(dc, row, theme_, false, px(8));
                 if (hovered || renamingNow)
                 {
-                    Draw::RoundRect(dc, row, px(8), hovered ? t.selected : t.surface,
-                                    hovered ? t.selected : t.surface, 1);
+                    Draw::RoundRect(dc, row, px(8), hovered ? t.selected : t.surface, hovered ? t.selected : t.surface,
+                                    1);
                 }
 
                 const COLORREF accent = WsAccent(ws);
-                // One shared glyph for every workspace; the accent only highlights the active one.
                 Draw::Icon(dc, GlyphNavWorkspaces,
                            {row.left + px(16), row.top + px(21), row.left + px(38), row.top + px(43)},
-                           theme_.IconFont(), active ? accent : t.textDim);
+                           theme_.IconFont(), accent);
                 if (active)
                 {
                     RECT dot{row.left + px(34), row.top + px(39), row.left + px(42), row.top + px(47)};
@@ -865,19 +888,17 @@ namespace flowspace::ui
                 {
                     meta += L"  \u00B7  Active";
                 }
-                Draw::Text(dc, meta, {textLeft, row.top + px(34), textRight, row.top + px(52)},
-                           theme_.SmallFont(), active ? t.success : t.textDim,
-                           DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+                Draw::Text(dc, meta, {textLeft, row.top + px(34), textRight, row.top + px(52)}, theme_.SmallFont(),
+                           active ? t.success : t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
                 AddHotspot(HS_WS_RENAME, index, {textLeft, row.top + px(6), textRight, row.top + px(56)});
 
-                RECT more{row.right - px(16) - menuBtn, row.top + (rowH - menuBtn) / 2,
-                          row.right - px(16), row.top + (rowH + menuBtn) / 2};
+                RECT more{row.right - px(16) - menuBtn, row.top + (rowH - menuBtn) / 2, row.right - px(16),
+                          row.top + (rowH + menuBtn) / 2};
                 const bool moreHover = hoveredId_ == HS_WS_MENU && hoveredIndex_ == index;
-                Draw::RoundRect(dc, more, px(5), moreHover ? t.selected : t.surface,
-                                moreHover ? t.selected : t.border, 1);
-                Draw::Icon(dc, GlyphMore, more, theme_.IconFont(),
-                           moreHover ? t.text : t.textDim);
+                Draw::RoundRect(dc, more, px(5), moreHover ? t.selected : t.surface, moreHover ? t.selected : t.border,
+                                1);
+                Draw::Icon(dc, GlyphMore, more, theme_.IconFont(), moreHover ? t.text : t.textDim);
                 AddHotspot(HS_WS_MENU, index, more);
 
                 y += rowH + gap;
@@ -896,20 +917,21 @@ namespace flowspace::ui
         SetContentEnd(y);
     }
 
-    // =======================================================================
-    // Page: Monitors (visual arrangement)
-    // =======================================================================
+    // Monitors page.
 
     void MainWindow::PaintPageMonitors(HDC dc, const RECT &body)
     {
-        auto px = [&](int v) { return theme_.Px(v); };
+        auto px = [&](int v)
+        {
+            return theme_.Px(v);
+        };
         const auto &t = theme_.Tokens();
         const auto monitors = ctx_.engine->GetMonitors();
 
         int y = body.top;
 
-        Draw::Text(dc, L"Arrangement", {body.left, y, body.right, y + px(22)},
-                   theme_.HeadingFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
+        Draw::Text(dc, L"Arrangement", {body.left, y, body.right, y + px(22)}, theme_.HeadingFont(), t.text,
+                   DT_LEFT | DT_TOP | DT_SINGLELINE);
         y += px(30);
 
         const int panelH = px(240);
@@ -918,8 +940,8 @@ namespace flowspace::ui
 
         if (monitors.empty())
         {
-            Components::EmptyState(dc, {panel.left, panel.top + px(24), panel.right, panel.bottom - px(12)},
-                                   theme_, GlyphMonitor, L"No monitors detected",
+            Components::EmptyState(dc, {panel.left, panel.top + px(24), panel.right, panel.bottom - px(12)}, theme_,
+                                   GlyphMonitor, L"No monitors detected",
                                    L"Connect a display to configure its workspace.");
         }
         else
@@ -932,12 +954,18 @@ namespace flowspace::ui
                 const double r = mon.bounds.right, b = mon.bounds.bottom;
                 if (first)
                 {
-                    minL = l; minT = tp; maxR = r; maxB = b; first = false;
+                    minL = l;
+                    minT = tp;
+                    maxR = r;
+                    maxB = b;
+                    first = false;
                 }
                 else
                 {
-                    minL = std::min(minL, l); minT = std::min(minT, tp);
-                    maxR = std::max(maxR, r); maxB = std::max(maxB, b);
+                    minL = std::min(minL, l);
+                    minT = std::min(minT, tp);
+                    maxR = std::max(maxR, r);
+                    maxB = std::max(maxB, b);
                 }
             }
             const double virtW = std::max(1.0, maxR - minL);
@@ -958,12 +986,13 @@ namespace flowspace::ui
             for (const auto &mon : monitors)
             {
                 RECT mr{static_cast<LONG>(std::lround(offX + (mon.bounds.left - minL) * scale)),
-                        static_cast<LONG>(std::lround(offY + (mon.bounds.top - minT) * scale)),
-                        0, 0};
+                        static_cast<LONG>(std::lround(offY + (mon.bounds.top - minT) * scale)), 0, 0};
                 mr.right = static_cast<LONG>(std::lround(offX + (mon.bounds.right - minL) * scale));
                 mr.bottom = static_cast<LONG>(std::lround(offY + (mon.bounds.bottom - minT) * scale));
-                if (mr.right - mr.left < px(24)) mr.right = mr.left + px(24);
-                if (mr.bottom - mr.top < px(24)) mr.bottom = mr.top + px(24);
+                if (mr.right - mr.left < px(24))
+                    mr.right = mr.left + px(24);
+                if (mr.bottom - mr.top < px(24))
+                    mr.bottom = mr.top + px(24);
 
                 if (mon.isPrimary)
                 {
@@ -981,8 +1010,8 @@ namespace flowspace::ui
                     const std::wstring name = MonitorName(mon);
                     Draw::Text(dc, name, {mr.left + px(6), mr.top + px(6), mr.right - px(6), mr.top + px(24)},
                                theme_.SmallFont(), t.text, DT_CENTER | DT_TOP | DT_SINGLELINE);
-                    const std::wstring geo = std::to_wstring(mon.bounds.width()) + L" \u00D7 " +
-                                             std::to_wstring(mon.bounds.height());
+                    const std::wstring geo =
+                        std::to_wstring(mon.bounds.width()) + L" \u00D7 " + std::to_wstring(mon.bounds.height());
                     Draw::Text(dc, geo, {mr.left + px(6), mr.top + px(26), mr.right - px(6), mr.top + px(44)},
                                theme_.SmallFont(), t.textDim, DT_CENTER | DT_TOP | DT_SINGLELINE);
                     if (mon.isPrimary && innerW >= px(130))
@@ -1000,9 +1029,8 @@ namespace flowspace::ui
         }
         y += panelH + px(kSectionGap96);
 
-        // --- Monitor list with workspace assignment ---
-        Draw::Text(dc, L"Monitors", {body.left, y, body.right, y + px(22)},
-                   theme_.HeadingFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
+        Draw::Text(dc, L"Monitors", {body.left, y, body.right, y + px(22)}, theme_.HeadingFont(), t.text,
+                   DT_LEFT | DT_TOP | DT_SINGLELINE);
         y += px(30);
 
         const int rowH = px(64);
@@ -1018,15 +1046,16 @@ namespace flowspace::ui
             Draw::Text(dc, name, {row.left + px(48), row.top + px(10), row.right - px(320), row.top + px(32)},
                        theme_.BodyFont(), t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
             Draw::Text(dc, MonitorGeometry(mon),
-                       {row.left + px(48), row.top + px(32), row.right - px(320), row.top + px(52)},
-                       theme_.SmallFont(), t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+                       {row.left + px(48), row.top + px(32), row.right - px(320), row.top + px(52)}, theme_.SmallFont(),
+                       t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
             // Workspace chips (switch this monitor; only its own list is shown).
             const auto monWorkspaces = ctx_.engine->GetWorkspacesForMonitor(mon.stableId);
             const int chipW = px(26);
             const int chipGap = px(4);
             int chipsRight = row.right - px(30);
-            const int chipsLeft = std::max(static_cast<int>(row.left) + px(250), chipsRight - static_cast<int>(monWorkspaces.size()) * (chipW + chipGap));
+            const int chipsLeft = std::max(static_cast<int>(row.left) + px(250),
+                                           chipsRight - static_cast<int>(monWorkspaces.size()) * (chipW + chipGap));
             int cx = chipsRight - chipW;
             for (int w = static_cast<int>(monWorkspaces.size()) - 1; w >= 0; --w)
             {
@@ -1038,8 +1067,8 @@ namespace flowspace::ui
                 const bool active = monWorkspaces[static_cast<size_t>(w)].id == mon.activeWorkspaceId;
                 const COLORREF fill = active ? WsAccent(monWorkspaces[static_cast<size_t>(w)]) : t.inputBg;
                 Draw::RoundRect(dc, chip, px(5), fill, active ? fill : t.border, 1);
-                Draw::Text(dc, std::to_wstring(w + 1), chip, theme_.SmallFont(),
-                           active ? t.textOnAccent : t.textDim, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                Draw::Text(dc, std::to_wstring(w + 1), chip, theme_.SmallFont(), active ? t.textOnAccent : t.textDim,
+                           DT_CENTER | DT_VCENTER | DT_SINGLELINE);
                 AddHotspot(HS_MON_SWITCH, index * 100 + w, chip);
                 cx -= chipW + chipGap;
             }
@@ -1051,13 +1080,14 @@ namespace flowspace::ui
         SetContentEnd(y);
     }
 
-    // =======================================================================
-    // Page: Shortcuts
-    // =======================================================================
+    // Shortcuts page.
 
     void MainWindow::PaintPageShortcuts(HDC dc, const RECT &body)
     {
-        auto px = [&](int v) { return theme_.Px(v); };
+        auto px = [&](int v)
+        {
+            return theme_.Px(v);
+        };
         const auto &t = theme_.Tokens();
         auto &hotkeys = ctx_.config->Get().hotkeys;
 
@@ -1085,16 +1115,15 @@ namespace flowspace::ui
             const int keyW = std::min(px(190), static_cast<int>(row.right - row.left) / 2);
             RECT keyBox{keyRight - keyW, row.top + px(8), keyRight, row.bottom - px(8)};
 
-            Draw::Text(dc, ActionName(binding.action),
-                       {row.left + px(16), row.top, keyBox.left - px(16), row.bottom},
+            Draw::Text(dc, ActionName(binding.action), {row.left + px(16), row.top, keyBox.left - px(16), row.bottom},
                        theme_.BodyFont(), t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
             const bool capturingThis = capturing_ && captureIndex_ == index;
             const std::wstring keys = capturingThis ? L"Press a key\u2026" : platform::HotkeyManager::Describe(binding);
             Draw::RoundRect(dc, keyBox, px(5), capturingThis ? t.accent : t.inputBg,
                             capturingThis ? t.accent : t.border, 1);
-            Draw::Text(dc, keys, keyBox, theme_.SmallFont(),
-                       capturingThis ? t.textOnAccent : t.text, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            Draw::Text(dc, keys, keyBox, theme_.SmallFont(), capturingThis ? t.textOnAccent : t.text,
+                       DT_CENTER | DT_VCENTER | DT_SINGLELINE);
             AddHotspot(HS_SHORT_CAPTURE, index, keyBox);
 
             Components::Toggle(dc, toggle, theme_, binding.enabled,
@@ -1108,13 +1137,14 @@ namespace flowspace::ui
         SetContentEnd(y);
     }
 
-    // =======================================================================
-    // Page: Behavior
-    // =======================================================================
+    // Behavior page.
 
     void MainWindow::PaintPageBehavior(HDC dc, const RECT &body)
     {
-        auto px = [&](int v) { return theme_.Px(v); };
+        auto px = [&](int v)
+        {
+            return theme_.Px(v);
+        };
         const auto &t = theme_.Tokens();
         const auto &settings = ctx_.config->Get().settings;
 
@@ -1128,8 +1158,8 @@ namespace flowspace::ui
             {
                 y += px(10);
             }
-            Draw::Text(dc, label, {body.left, y, body.right, y + px(22)},
-                       theme_.HeadingFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
+            Draw::Text(dc, label, {body.left, y, body.right, y + px(22)}, theme_.HeadingFont(), t.text,
+                       DT_LEFT | DT_TOP | DT_SINGLELINE);
             y += px(28);
         };
 
@@ -1144,10 +1174,9 @@ namespace flowspace::ui
 
             const int toggleW = px(44);
             const int toggleH = px(24);
-            RECT toggle{row.right - px(16) - toggleW, row.top + (rowH - toggleH) / 2,
-                        row.right - px(16), row.top + (rowH + toggleH) / 2};
-            Components::Toggle(dc, toggle, theme_, on,
-                               hoveredId_ == HS_BEHAVIOR_TOGGLE && hoveredIndex_ == index);
+            RECT toggle{row.right - px(16) - toggleW, row.top + (rowH - toggleH) / 2, row.right - px(16),
+                        row.top + (rowH + toggleH) / 2};
+            Components::Toggle(dc, toggle, theme_, on, hoveredId_ == HS_BEHAVIOR_TOGGLE && hoveredIndex_ == index);
             AddHotspot(HS_BEHAVIOR_TOGGLE, index, toggle);
             y += rowH + gap;
         };
@@ -1170,20 +1199,22 @@ namespace flowspace::ui
         };
 
         section(L"Workspace switching");
-        settingRow(L"Hotkeys follow the mouse monitor", L"Monitor-relative shortcuts act on the display under the cursor.",
-                   settings.switchByMouseMonitor, 2);
+        settingRow(L"Hotkeys follow the mouse monitor",
+                   L"Monitor-relative shortcuts act on the display under the cursor.", settings.switchByMouseMonitor,
+                   2);
         settingRow(L"Pause workspace management", L"Keep hotkeys alive but stop hiding and showing windows.",
                    settings.paused, 5);
 
         section(L"Window management");
-        settingRow(L"Hide windows (SW_HIDE)", L"Hidden windows lose their taskbar button. Turn off to minimize instead.",
+        settingRow(L"Hide windows (SW_HIDE)",
+                   L"Hidden windows lose their taskbar button. Turn off to minimize instead.",
                    settings.hideMode == core::HideMode::Hide, 0);
-        settingRow(L"Group new windows by application", L"A new window inherits the workspace of its app's other windows.",
+        settingRow(L"Group new windows by application",
+                   L"A new window inherits the workspace of its app's other windows.",
                    settings.groupWindowsByApplication, 6);
 
         section(L"Startup");
-        settingRow(L"Start with Windows", L"Register FlowSpace in the HKCU Run key.",
-                   settings.startWithWindows, 1);
+        settingRow(L"Start with Windows", L"Register FlowSpace in the HKCU Run key.", settings.startWithWindows, 1);
 
         section(L"Notifications");
         settingRow(L"Show switch notification", L"Display a compact notification after switching.",
@@ -1193,11 +1224,12 @@ namespace flowspace::ui
         {
             RECT row{body.left, y, body.right, y + rowH};
             Components::Card(dc, row, theme_, false, px(8));
-            Draw::Text(dc, L"Notification fade duration", {row.left + px(16), row.top + px(9), row.right - px(240), row.top + px(29)},
-                       theme_.BodyFont(), t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+            Draw::Text(dc, L"Notification fade duration",
+                       {row.left + px(16), row.top + px(9), row.right - px(240), row.top + px(29)}, theme_.BodyFont(),
+                       t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
             Draw::Text(dc, L"Fade duration of the switch notification (0-2000 ms).",
-                       {row.left + px(16), row.top + px(29), row.right - px(240), row.top + px(48)},
-                       theme_.SmallFont(), t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+                       {row.left + px(16), row.top + px(29), row.right - px(240), row.top + px(48)}, theme_.SmallFont(),
+                       t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
             RECT minus{row.right - px(16) - px(150), row.top + px(15), row.right - px(16) - px(110), row.top + px(41)};
             RECT plus{row.right - px(16) - px(40), row.top + px(15), row.right - px(16), row.top + px(41)};
@@ -1208,8 +1240,8 @@ namespace flowspace::ui
             Draw::RoundRect(dc, plus, px(5), plusHover ? t.selected : t.inputBg, t.border, 1);
             Draw::Text(dc, L"\u2212", minus, theme_.BodyFont(), t.text, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
             Draw::Text(dc, L"+", plus, theme_.BodyFont(), t.text, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-            Draw::Text(dc, std::to_wstring(settings.overlayAnimationMs) + L" ms", value,
-                       theme_.SmallFont(), t.text, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            Draw::Text(dc, std::to_wstring(settings.overlayAnimationMs) + L" ms", value, theme_.SmallFont(), t.text,
+                       DT_CENTER | DT_VCENTER | DT_SINGLELINE);
             AddHotspot(HS_BEHAVIOR_STEP, 0, minus);
             AddHotspot(HS_BEHAVIOR_STEP, 1, plus);
             y += rowH + gap;
@@ -1218,13 +1250,14 @@ namespace flowspace::ui
         SetContentEnd(y);
     }
 
-    // =======================================================================
-    // Page: App Rules
-    // =======================================================================
+    // App Rules page.
 
     void MainWindow::PaintPageAppRules(HDC dc, const RECT &body)
     {
-        auto px = [&](int v) { return theme_.Px(v); };
+        auto px = [&](int v)
+        {
+            return theme_.Px(v);
+        };
         const auto &t = theme_.Tokens();
         auto &rules = ctx_.config->Get().appRules;
         const auto &workspaces = ctx_.engine->GetWorkspaces();
@@ -1241,8 +1274,8 @@ namespace flowspace::ui
         {
             RECT empty{body.left, y, body.right, y + px(130)};
             Components::Card(dc, empty, theme_, false, px(8));
-            Components::EmptyState(dc, {empty.left, empty.top + px(20), empty.right, empty.bottom - px(8)},
-                                   theme_, GlyphApp, L"No app rules yet",
+            Components::EmptyState(dc, {empty.left, empty.top + px(20), empty.right, empty.bottom - px(8)}, theme_,
+                                   GlyphApp, L"No app rules yet",
                                    L"Add a rule to assign a matching application to a workspace automatically.");
             y += px(130);
             SetContentEnd(y);
@@ -1265,8 +1298,8 @@ namespace flowspace::ui
             Draw::Text(dc, exe, {row.left + px(48), row.top + px(9), row.right - px(160), row.top + px(31)},
                        theme_.BodyFont(), t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
             Draw::Text(dc, L"Target: " + targetName + (rule.enabled ? L"" : L"  \u00B7  Disabled"),
-                       {row.left + px(48), row.top + px(31), row.right - px(160), row.top + px(51)},
-                       theme_.SmallFont(), rule.enabled ? t.textDim : t.warning, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+                       {row.left + px(48), row.top + px(31), row.right - px(160), row.top + px(51)}, theme_.SmallFont(),
+                       rule.enabled ? t.textDim : t.warning, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
             const int toggleW = px(44);
             const int toggleH = px(24);
@@ -1277,8 +1310,8 @@ namespace flowspace::ui
                                hoveredId_ == HS_RULE_TOGGLE && hoveredIndex_ == index);
             AddHotspot(HS_RULE_TOGGLE, index, toggle);
 
-            RECT del{row.right - px(16) - px(30), row.top + (rowH - px(30)) / 2,
-                     row.right - px(16), row.top + (rowH + px(30)) / 2};
+            RECT del{row.right - px(16) - px(30), row.top + (rowH - px(30)) / 2, row.right - px(16),
+                     row.top + (rowH + px(30)) / 2};
             const bool delHover = hoveredId_ == HS_RULE_DELETE && hoveredIndex_ == index;
             Draw::RoundRect(dc, del, px(5), delHover ? t.error : t.surface, delHover ? t.error : t.border, 1);
             Draw::Icon(dc, GlyphDelete, del, theme_.IconFont(), delHover ? t.textOnAccent : t.error);
@@ -1290,19 +1323,19 @@ namespace flowspace::ui
         SetContentEnd(y);
     }
 
-    // =======================================================================
-    // Page: Recovery
-    // =======================================================================
+    // Recovery page.
 
     void MainWindow::PaintPageRecovery(HDC dc, const RECT &body)
     {
-        auto px = [&](int v) { return theme_.Px(v); };
+        auto px = [&](int v)
+        {
+            return theme_.Px(v);
+        };
         const auto &t = theme_.Tokens();
         const auto entries = ctx_.recovery->Entries();
 
         int y = body.top;
 
-        // Status card.
         RECT status{body.left, y, body.right, y + px(76)};
         Components::Card(dc, status, theme_, false, px(8));
         Draw::Icon(dc, entries.empty() ? GlyphCheck : GlyphWarning,
@@ -1311,22 +1344,22 @@ namespace flowspace::ui
         Draw::Text(dc, entries.empty() ? L"Recovery is clean" : L"Hidden windows are pending restoration",
                    {status.left + px(56), status.top + px(14), status.right - px(140), status.top + px(38)},
                    theme_.BodyFont(), t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-        Draw::Text(dc, entries.empty() ? L"No hidden windows are currently journaled."
-                                       : L"Use Reveal all windows to restore them before they are lost.",
+        Draw::Text(dc,
+                   entries.empty() ? L"No hidden windows are currently journaled."
+                                   : L"Use Reveal all windows to restore them before they are lost.",
                    {status.left + px(56), status.top + px(38), status.right - px(140), status.top + px(60)},
                    theme_.SmallFont(), t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
         const std::wstring countLabel = std::to_wstring(entries.size()) + (entries.empty() ? L" hidden" : L" pending");
         RECT badge{status.right - px(128), status.top + px(24), status.right - px(16), status.top + px(52)};
-        Components::Badge(dc, badge, theme_, countLabel, theme_.SmallFont(),
-                          entries.empty() ? t.selected : t.warning,
+        Components::Badge(dc, badge, theme_, countLabel, theme_.SmallFont(), entries.empty() ? t.selected : t.warning,
                           entries.empty() ? t.success : t.textOnAccent);
         y += px(76) + px(16);
 
         RECT revealAll{body.left, y, body.left + px(190), y + px(36)};
         const bool revealHover = hoveredId_ == HS_RECOVERY_REVEAL && hoveredIndex_ < 0;
-        Components::Button(dc, revealAll, theme_, L"Reveal all windows", theme_.BodyFont(), revealHover,
-                           false, !entries.empty());
+        Components::Button(dc, revealAll, theme_, L"Reveal all windows", theme_.BodyFont(), revealHover, false,
+                           !entries.empty());
         AddHotspot(HS_RECOVERY_REVEAL, -1, revealAll);
         y += px(36) + px(kSectionGap96);
 
@@ -1334,15 +1367,15 @@ namespace flowspace::ui
         {
             RECT empty{body.left, y, body.right, y + px(132)};
             Components::Card(dc, empty, theme_, false, px(8));
-            Components::EmptyState(dc, {empty.left, empty.top + px(18), empty.right, empty.bottom - px(8)},
-                                   theme_, GlyphReveal, L"No hidden windows",
+            Components::EmptyState(dc, {empty.left, empty.top + px(18), empty.right, empty.bottom - px(8)}, theme_,
+                                   GlyphReveal, L"No hidden windows",
                                    L"Nothing is currently hidden by FlowSpace. The recovery journal is empty.");
             y += px(132) + px(kSectionGap96);
         }
         else
         {
-            Draw::Text(dc, L"Hidden windows", {body.left, y, body.right, y + px(22)},
-                       theme_.HeadingFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
+            Draw::Text(dc, L"Hidden windows", {body.left, y, body.right, y + px(22)}, theme_.HeadingFont(), t.text,
+                       DT_LEFT | DT_TOP | DT_SINGLELINE);
             y += px(28);
             int index = 0;
             for (const auto &entry : entries)
@@ -1350,10 +1383,10 @@ namespace flowspace::ui
                 RECT row{body.left, y, body.right, y + px(46)};
                 Components::Card(dc, row, theme_, false, px(8));
                 std::wstring title = entry.title.empty() ? L"(untitled window)" : entry.title;
-                std::wstring label = title + L"  \u2014  " + entry.executableName +
-                                     L"  [PID " + std::to_wstring(entry.processId) + L"]";
-                Draw::Text(dc, label, {row.left + px(16), row.top, row.right - px(120), row.bottom},
-                           theme_.SmallFont(), t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+                std::wstring label =
+                    title + L"  \u2014  " + entry.executableName + L"  [PID " + std::to_wstring(entry.processId) + L"]";
+                Draw::Text(dc, label, {row.left + px(16), row.top, row.right - px(120), row.bottom}, theme_.SmallFont(),
+                           t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
                 RECT btn{row.right - px(96), row.top + px(8), row.right - px(12), row.bottom - px(8)};
                 const bool hov = hoveredId_ == HS_RECOVERY_REVEAL && hoveredIndex_ == index;
                 Components::Button(dc, btn, theme_, L"Reveal", theme_.SmallFont(), hov);
@@ -1364,9 +1397,8 @@ namespace flowspace::ui
             y += px(kSectionGap96 - kRowGap96);
         }
 
-        // Diagnostics.
-        Draw::Text(dc, L"Diagnostics", {body.left, y, body.right, y + px(22)},
-                   theme_.HeadingFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
+        Draw::Text(dc, L"Diagnostics", {body.left, y, body.right, y + px(22)}, theme_.HeadingFont(), t.text,
+                   DT_LEFT | DT_TOP | DT_SINGLELINE);
         y += px(30);
 
         wchar_t configPath[MAX_PATH]{};
@@ -1378,10 +1410,10 @@ namespace flowspace::ui
         {
             RECT row{body.left, y, body.right, y + px(40)};
             Components::Card(dc, row, theme_, false, px(6));
-            Draw::Text(dc, label, {row.left + px(12), row.top, row.left + px(84), row.bottom},
-                       theme_.SmallFont(), t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-            Draw::Text(dc, value, {row.left + px(88), row.top, row.right - px(12), row.bottom},
-                       theme_.SmallFont(), t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+            Draw::Text(dc, label, {row.left + px(12), row.top, row.left + px(84), row.bottom}, theme_.SmallFont(),
+                       t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+            Draw::Text(dc, value, {row.left + px(88), row.top, row.right - px(12), row.bottom}, theme_.SmallFont(),
+                       t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
             y += px(40) + px(6);
         };
         diagRow(L"Config", configPath);
@@ -1391,13 +1423,14 @@ namespace flowspace::ui
         SetContentEnd(y);
     }
 
-    // =======================================================================
-    // Page: About
-    // =======================================================================
+    // About page.
 
     void MainWindow::PaintPageAbout(HDC dc, const RECT &body)
     {
-        auto px = [&](int v) { return theme_.Px(v); };
+        auto px = [&](int v)
+        {
+            return theme_.Px(v);
+        };
         const auto &t = theme_.Tokens();
 
         int y = body.top;
@@ -1410,15 +1443,17 @@ namespace flowspace::ui
         Draw::Text(dc, L"FlowSpace", {tile.right + px(14), card.top + px(22), card.right - px(24), card.top + px(46)},
                    theme_.HeadingFont(), t.text, DT_LEFT | DT_TOP | DT_SINGLELINE);
         Draw::Text(dc, L"Version 0.1.0  \u00B7  Native Win32  \u00B7  x64",
-                   {tile.right + px(14), card.top + px(46), card.right - px(24), card.top + px(64)},
-                   theme_.SmallFont(), t.textDim, DT_LEFT | DT_TOP | DT_SINGLELINE);
+                   {tile.right + px(14), card.top + px(46), card.right - px(24), card.top + px(64)}, theme_.SmallFont(),
+                   t.textDim, DT_LEFT | DT_TOP | DT_SINGLELINE);
 
-        Components::Divider(dc, {card.left + px(24), card.top + px(78), card.right - px(24), card.top + px(79)}, theme_);
+        Components::Divider(dc, {card.left + px(24), card.top + px(78), card.right - px(24), card.top + px(79)},
+                            theme_);
 
         auto paragraph = [&](const wchar_t *text, int top, int height)
         {
-            Draw::TextWrapped(dc, text, {card.left + px(24), card.top + px(top), card.right - px(24), card.top + px(top + height)},
-                              theme_.SmallFont(), t.textDim);
+            Draw::TextWrapped(
+                dc, text, {card.left + px(24), card.top + px(top), card.right - px(24), card.top + px(top + height)},
+                theme_.SmallFont(), t.textDim);
         };
         paragraph(L"Independent per-monitor workspaces for Windows 10 and 11. Each display keeps its own "
                   L"workspace and hidden windows.",
@@ -1426,20 +1461,16 @@ namespace flowspace::ui
         paragraph(L"Windows are hidden with ShowWindowAsync(SW_HIDE) and journaled to disk before hiding, so "
                   L"the recovery journal can restore them after an abnormal shutdown.",
                   140, 44);
-        paragraph(L"Built with native C++23 and Win32; no administrator rights required.",
-                  190, 40);
+        paragraph(L"Built with native C++23 and Win32; no administrator rights required.", 190, 40);
 
-        Components::Divider(dc, {card.left + px(24), card.bottom - px(56), card.right - px(24), card.bottom - px(55)}, theme_);
+        Components::Divider(dc, {card.left + px(24), card.bottom - px(56), card.right - px(24), card.bottom - px(55)},
+                            theme_);
         Draw::Text(dc, L"Settings, workspace state and the recovery journal live in %LOCALAPPDATA%\\FlowSpace.",
                    {card.left + px(24), card.bottom - px(48), card.right - px(24), card.bottom - px(20)},
                    theme_.SmallFont(), t.textDim, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
         SetContentEnd(card.bottom);
     }
-
-    // =======================================================================
-    // Interaction
-    // =======================================================================
 
     void MainWindow::OnMouseMove(int x, int y)
     {
@@ -1524,205 +1555,219 @@ namespace flowspace::ui
 
             switch (id)
             {
-            case HS_NAV:
-                if (page_ != index)
-                {
-                    page_ = index;
-                    scrollOffset_ = 0;
-                    pageContentHeight_ = 0;
-                    hoveredId_ = -1;
-                    hoveredIndex_ = -1;
-                }
-                return true;
-
-            case HS_WS_ADD:
-            {
-                const auto monitors = ctx_.engine->GetMonitors();
-                if (index >= 100)
-                {
-                    const size_t monitorIndex = static_cast<size_t>(index - 100);
-                    if (monitorIndex < monitors.size())
+                case HS_NAV:
+                    if (page_ != index)
                     {
-                        ctx_.engine->CreateWorkspace("Workspace", monitors[monitorIndex].stableId);
+                        page_ = index;
+                        scrollOffset_ = 0;
+                        pageContentHeight_ = 0;
+                        hoveredId_ = -1;
+                        hoveredIndex_ = -1;
+                    }
+                    return true;
+
+                case HS_WS_ADD:
+                {
+                    const auto monitors = ctx_.engine->GetMonitors();
+                    if (index >= 100)
+                    {
+                        const size_t monitorIndex = static_cast<size_t>(index - 100);
+                        if (monitorIndex < monitors.size())
+                        {
+                            ctx_.engine->CreateWorkspace("Workspace", monitors[monitorIndex].stableId);
+                            SaveConfig();
+                        }
+                        return true;
+                    }
+                    if (index == 0)
+                    {
+                        // Overview quick action / fallback: add to the primary (or first) monitor.
+                        std::wstring target;
+                        for (const auto &mon : monitors)
+                        {
+                            if (mon.isPrimary)
+                            {
+                                target = mon.stableId;
+                                break;
+                            }
+                        }
+                        if (target.empty() && !monitors.empty())
+                        {
+                            target = monitors.front().stableId;
+                        }
+                        if (!target.empty())
+                        {
+                            ctx_.engine->CreateWorkspace("Workspace", target);
+                            SaveConfig();
+                        }
+                    }
+                    else if (index >= 1 && index <= 3)
+                    {
+                        page_ = index + 1;
+                        scrollOffset_ = 0;
+                        pageContentHeight_ = 0;
+                        hoveredId_ = -1;
+                        hoveredIndex_ = -1;
+                    }
+                    return true;
+                }
+                case HS_WS_MENU:
+                    ShowWorkspaceMenu(index);
+                    return true;
+                case HS_WS_RENAME:
+                case HS_WS_DUPLICATE:
+                case HS_WS_RESET:
+                case HS_WS_DELETE:
+                case HS_WS_ACCENT:
+                    RunWorkspaceAction(id, index);
+                    return true;
+
+                case HS_SHORT_TOGGLE:
+                {
+                    auto &hotkeys = ctx_.config->Get().hotkeys;
+                    if (index < static_cast<int>(hotkeys.size()))
+                    {
+                        hotkeys[index].enabled = !hotkeys[index].enabled;
                         SaveConfig();
                     }
                     return true;
                 }
-                if (index == 0)
+                case HS_SHORT_CAPTURE:
+                    BeginCapture(index);
+                    return true;
+
+                case HS_BEHAVIOR_TOGGLE:
                 {
-                    // Overview quick action / fallback: add to the primary (or first) monitor.
-                    std::wstring target;
-                    for (const auto &mon : monitors)
+                    auto &settings = ctx_.config->Get().settings;
+                    switch (index)
                     {
-                        if (mon.isPrimary)
+                        case 0:
+                            settings.hideMode = settings.hideMode == core::HideMode::Hide ? core::HideMode::Minimize
+                                                                                          : core::HideMode::Hide;
+                            break;
+                        case 1:
+                            settings.startWithWindows = !settings.startWithWindows;
+                            break;
+                        case 2:
+                            settings.switchByMouseMonitor = !settings.switchByMouseMonitor;
+                            break;
+                        case 3:
+                            settings.paused = !settings.paused;
+                            break;
+                        case 4:
+                            settings.groupWindowsByApplication = !settings.groupWindowsByApplication;
+                            break;
+                        case 5:
+                            settings.showOverlay = !settings.showOverlay;
+                            break;
+                        case 8:
                         {
-                            target = mon.stableId;
+                            static constexpr const char *styles[] = {"slide", "fade", "scale", "none"};
+                            int pos = 0;
+                            for (int i = 0; i < 4; ++i)
+                            {
+                                if (settings.overlayAnimation == styles[i])
+                                {
+                                    pos = i;
+                                    break;
+                                }
+                            }
+                            settings.overlayAnimation = styles[(pos + 1) % 4];
                             break;
                         }
                     }
-                    if (target.empty() && !monitors.empty())
+                    SaveConfig();
+                    return true;
+                }
+                case HS_BEHAVIOR_STEP:
+                {
+                    auto &settings = ctx_.config->Get().settings;
+                    settings.overlayAnimationMs =
+                        std::clamp(settings.overlayAnimationMs + (index == 1 ? 20 : -20), 0, 2000);
+                    SaveConfig();
+                    return true;
+                }
+
+                case HS_RULE_TOGGLE:
+                {
+                    auto &rules = ctx_.config->Get().appRules;
+                    if (index < static_cast<int>(rules.size()))
                     {
-                        target = monitors.front().stableId;
-                    }
-                    if (!target.empty())
-                    {
-                        ctx_.engine->CreateWorkspace("Workspace", target);
+                        rules[index].enabled = !rules[index].enabled;
                         SaveConfig();
                     }
+                    return true;
                 }
-                else if (index >= 1 && index <= 3)
+                case HS_RULE_DELETE:
                 {
-                    page_ = index + 1;
-                    scrollOffset_ = 0;
-                    pageContentHeight_ = 0;
-                    hoveredId_ = -1;
-                    hoveredIndex_ = -1;
-                }
-                return true;
-            }
-            case HS_WS_MENU:
-                ShowWorkspaceMenu(index);
-                return true;
-            case HS_WS_RENAME:
-            case HS_WS_DUPLICATE:
-            case HS_WS_RESET:
-            case HS_WS_DELETE:
-            case HS_WS_ACCENT:
-                RunWorkspaceAction(id, index);
-                return true;
-
-            case HS_SHORT_TOGGLE:
-            {
-                auto &hotkeys = ctx_.config->Get().hotkeys;
-                if (index < static_cast<int>(hotkeys.size()))
-                {
-                    hotkeys[index].enabled = !hotkeys[index].enabled;
-                    SaveConfig();
-                }
-                return true;
-            }
-            case HS_SHORT_CAPTURE:
-                BeginCapture(index);
-                return true;
-
-            case HS_BEHAVIOR_TOGGLE:
-            {
-                auto &settings = ctx_.config->Get().settings;
-                switch (index)
-                {
-                case 0: settings.hideMode = settings.hideMode == core::HideMode::Hide ? core::HideMode::Minimize : core::HideMode::Hide; break;
-                case 1: settings.startWithWindows = !settings.startWithWindows; break;
-                case 2: settings.switchByMouseMonitor = !settings.switchByMouseMonitor; break;
-                case 3: settings.paused = !settings.paused; break;
-                case 4: settings.groupWindowsByApplication = !settings.groupWindowsByApplication; break;
-                case 5: settings.showOverlay = !settings.showOverlay; break;
-                case 8:
-                {
-                    static constexpr const char *styles[] = {"slide", "fade", "scale", "none"};
-                    int pos = 0;
-                    for (int i = 0; i < 4; ++i)
+                    auto &rules = ctx_.config->Get().appRules;
+                    if (index < static_cast<int>(rules.size()))
                     {
-                        if (settings.overlayAnimation == styles[i])
+                        rules.erase(rules.begin() + index);
+                        SaveConfig();
+                    }
+                    return true;
+                }
+                case HS_RULE_ADD:
+                {
+                    // "+ Add rule" is clicked while Settings is the foreground window, so use
+                    // the foreground window captured when Settings opened (the app you were
+                    // using before opening Settings).
+                    auto fg = ctx_.engine->GetLastFocusedWindowInfo();
+                    if (!fg.has_value())
+                    {
+                        fg = ctx_.engine->GetForegroundWindowInfo();
+                    }
+                    auto &rules = ctx_.config->Get().appRules;
+                    core::AppRule rule;
+                    rule.id = "rule-" + std::to_string(GetTickCount64());
+                    rule.enabled = true;
+                    rule.exeName = fg->executableName;
+
+                    // Target the active workspace on the SAME monitor the app is on (not the
+                    // first workspace, and not the primary monitor).
+                    rule.monitorPreference = core::MonitorPreference::Specific;
+                    rule.monitorStableId = fg->monitorStableId;
+                    if (auto activeWs = ctx_.engine->GetActiveWorkspaceId(fg->monitorStableId); activeWs.has_value())
+                    {
+                        rule.targetWorkspaceId = *activeWs;
+                    }
+                    else
+                    {
+                        const auto targetWorkspaces = ctx_.engine->GetWorkspacesForMonitor(fg->monitorStableId);
+                        rule.targetWorkspaceId = targetWorkspaces.empty() ? "" : targetWorkspaces.front().id;
+                    }
+                    spdlog::info("Add rule: exe='{}' monitor='{}' target='{}' (active workspace)",
+                                 std::string(rule.exeName.begin(), rule.exeName.end()),
+                                 std::string(rule.monitorStableId.begin(), rule.monitorStableId.end()),
+                                 rule.targetWorkspaceId);
+                    rules.push_back(rule);
+                    SaveConfig();
+                    return true;
+                }
+
+                case HS_RECOVERY_REVEAL:
+                    if (index < 0)
+                    {
+                        ctx_.engine->RevealAllWindows();
+                    }
+                    else
+                    {
+                        const auto entries = ctx_.recovery->Entries();
+                        if (index < static_cast<int>(entries.size()))
                         {
-                            pos = i;
-                            break;
+                            ctx_.engine->RevealSingleWindow(entries[index].hwnd);
                         }
                     }
-                    settings.overlayAnimation = styles[(pos + 1) % 4];
-                    break;
-                }
-                }
-                SaveConfig();
-                return true;
-            }
-            case HS_BEHAVIOR_STEP:
-            {
-                auto &settings = ctx_.config->Get().settings;
-                settings.overlayAnimationMs = std::clamp(settings.overlayAnimationMs + (index == 1 ? 20 : -20), 0, 2000);
-                SaveConfig();
-                return true;
-            }
+                    return true;
 
-            case HS_RULE_TOGGLE:
-            {
-                auto &rules = ctx_.config->Get().appRules;
-                if (index < static_cast<int>(rules.size()))
+                case HS_MON_SWITCH:
                 {
-                    rules[index].enabled = !rules[index].enabled;
-                    SaveConfig();
+                    const int monitorIndex = index / 100;
+                    const int wsIndex = index % 100;
+                    ctx_.engine->SwitchMonitorToWorkspaceIndex(monitorIndex, wsIndex);
+                    return true;
                 }
-                return true;
-            }
-            case HS_RULE_DELETE:
-            {
-                auto &rules = ctx_.config->Get().appRules;
-                if (index < static_cast<int>(rules.size()))
-                {
-                    rules.erase(rules.begin() + index);
-                    SaveConfig();
-                }
-                return true;
-            }
-            case HS_RULE_ADD:
-            {
-                // "+ Add rule" is clicked while Settings is the foreground window, so use
-                // the foreground window captured when Settings opened (the app you were
-                // using before opening Settings).
-                auto fg = ctx_.engine->GetLastFocusedWindowInfo();
-                if (!fg.has_value())
-                {
-                    fg = ctx_.engine->GetForegroundWindowInfo();
-                }
-                auto &rules = ctx_.config->Get().appRules;
-                core::AppRule rule;
-                rule.id = "rule-" + std::to_string(GetTickCount64());
-                rule.enabled = true;
-                rule.exeName = fg->executableName;
-
-                // Target the active workspace on the SAME monitor the app is on (not the
-                // first workspace, and not the primary monitor).
-                rule.monitorPreference = core::MonitorPreference::Specific;
-                rule.monitorStableId = fg->monitorStableId;
-                if (auto activeWs = ctx_.engine->GetActiveWorkspaceId(fg->monitorStableId); activeWs.has_value())
-                {
-                    rule.targetWorkspaceId = *activeWs;
-                }
-                else
-                {
-                    const auto targetWorkspaces = ctx_.engine->GetWorkspacesForMonitor(fg->monitorStableId);
-                    rule.targetWorkspaceId = targetWorkspaces.empty() ? "" : targetWorkspaces.front().id;
-                }
-                spdlog::info("Add rule: exe='{}' monitor='{}' target='{}' (active workspace)",
-                             std::string(rule.exeName.begin(), rule.exeName.end()),
-                             std::string(rule.monitorStableId.begin(), rule.monitorStableId.end()),
-                             rule.targetWorkspaceId);
-                rules.push_back(rule);
-                SaveConfig();
-                return true;
-            }
-
-            case HS_RECOVERY_REVEAL:
-                if (index < 0)
-                {
-                    ctx_.engine->RevealAllWindows();
-                }
-                else
-                {
-                    const auto entries = ctx_.recovery->Entries();
-                    if (index < static_cast<int>(entries.size()))
-                    {
-                        ctx_.engine->RevealSingleWindow(entries[index].hwnd);
-                    }
-                }
-                return true;
-
-            case HS_MON_SWITCH:
-            {
-                const int monitorIndex = index / 100;
-                const int wsIndex = index % 100;
-                ctx_.engine->SwitchMonitorToWorkspaceIndex(monitorIndex, wsIndex);
-                return true;
-            }
             }
         }
         return false;
@@ -1750,41 +1795,41 @@ namespace flowspace::ui
 
         switch (id)
         {
-        case HS_WS_RENAME:
-            BeginRename(workspaceIndex);
-            return;
-        case HS_WS_DUPLICATE:
-            ctx_.engine->DuplicateWorkspaceIndex(workspaceIndex);
-            SaveConfig();
-            break;
-        case HS_WS_RESET:
-            ctx_.engine->ResetWorkspaceIndex(workspaceIndex);
-            SaveConfig();
-            break;
-        case HS_WS_DELETE:
-            ctx_.engine->DeleteWorkspaceIndex(workspaceIndex);
-            SaveConfig();
-            break;
-        case HS_WS_ACCENT:
-        {
-            auto &ws = ctx_.engine->WorkspaceAt(workspaceIndex);
-            std::wstring current = core::Utf8ToWide(ws.accentColor);
-            const int n = sizeof(ThemeTokens::kAccentPresets) / sizeof(ThemeTokens::kAccentPresets[0]);
-            int pos = 0;
-            for (int i = 0; i < n; ++i)
+            case HS_WS_RENAME:
+                BeginRename(workspaceIndex);
+                return;
+            case HS_WS_DUPLICATE:
+                ctx_.engine->DuplicateWorkspaceIndex(workspaceIndex);
+                SaveConfig();
+                break;
+            case HS_WS_RESET:
+                ctx_.engine->ResetWorkspaceIndex(workspaceIndex);
+                SaveConfig();
+                break;
+            case HS_WS_DELETE:
+                ctx_.engine->DeleteWorkspaceIndex(workspaceIndex);
+                SaveConfig();
+                break;
+            case HS_WS_ACCENT:
             {
-                if (_wcsicmp(current.c_str(), ThemeTokens::kAccentPresets[i]) == 0)
+                auto &ws = ctx_.engine->WorkspaceAt(workspaceIndex);
+                std::wstring current = core::Utf8ToWide(ws.accentColor);
+                const int n = sizeof(ThemeTokens::kAccentPresets) / sizeof(ThemeTokens::kAccentPresets[0]);
+                int pos = 0;
+                for (int i = 0; i < n; ++i)
                 {
-                    pos = i;
-                    break;
+                    if (_wcsicmp(current.c_str(), ThemeTokens::kAccentPresets[i]) == 0)
+                    {
+                        pos = i;
+                        break;
+                    }
                 }
+                ws.accentColor = core::WideToUtf8(ThemeTokens::kAccentPresets[(pos + 1) % n]);
+                SaveConfig();
+                break;
             }
-            ws.accentColor = core::WideToUtf8(ThemeTokens::kAccentPresets[(pos + 1) % n]);
-            SaveConfig();
-            break;
-        }
-        default:
-            return;
+            default:
+                return;
         }
         InvalidateRect(hwnd_, nullptr, FALSE);
     }
@@ -1813,8 +1858,8 @@ namespace flowspace::ui
         POINT pt{};
         GetCursorPos(&pt);
         SetForegroundWindow(hwnd_);
-        const int command = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_NONOTIFY,
-                                           pt.x, pt.y, 0, hwnd_, nullptr);
+        const int command =
+            TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_NONOTIFY, pt.x, pt.y, 0, hwnd_, nullptr);
         DestroyMenu(menu);
         if (command != 0)
         {
@@ -1923,10 +1968,14 @@ namespace flowspace::ui
         }
 
         std::wstring mods;
-        if (GetKeyState(VK_CONTROL) & 0x8000) mods += mods.empty() ? L"Ctrl" : L"+Ctrl";
-        if (GetKeyState(VK_MENU) & 0x8000) mods += mods.empty() ? L"Alt" : L"+Alt";
-        if (GetKeyState(VK_SHIFT) & 0x8000) mods += mods.empty() ? L"Shift" : L"+Shift";
-        if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x8000) mods += mods.empty() ? L"Win" : L"+Win";
+        if (GetKeyState(VK_CONTROL) & 0x8000)
+            mods += mods.empty() ? L"Ctrl" : L"+Ctrl";
+        if (GetKeyState(VK_MENU) & 0x8000)
+            mods += mods.empty() ? L"Alt" : L"+Alt";
+        if (GetKeyState(VK_SHIFT) & 0x8000)
+            mods += mods.empty() ? L"Shift" : L"+Shift";
+        if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x8000)
+            mods += mods.empty() ? L"Win" : L"+Win";
 
         std::wstring keyName = platform::HotkeyManager::KeyName(static_cast<UINT>(vk));
         if (keyName.empty())
@@ -1952,9 +2001,9 @@ namespace flowspace::ui
     {
         const auto &t = theme_.Tokens();
         Draw::RoundRect(dc, rect, theme_.Px(5), t.inputBg, t.accent, 1);
-        RECT textRect{rect.left + theme_.Px(4), rect.top + theme_.Px(2),
-                      rect.right - theme_.Px(4), rect.bottom - theme_.Px(2)};
-        Draw::Text(dc, renameBuffer_, textRect, theme_.HeadingFont(), t.text,DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+        RECT textRect{rect.left + theme_.Px(4), rect.top + theme_.Px(2), rect.right - theme_.Px(4),
+                      rect.bottom - theme_.Px(2)};
+        Draw::Text(dc, renameBuffer_, textRect, theme_.HeadingFont(), t.text, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
         HGDIOBJ oldFont = SelectObject(dc, theme_.HeadingFont());
         SIZE size{};

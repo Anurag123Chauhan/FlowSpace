@@ -16,12 +16,10 @@
 #include <objbase.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
+#include <cstring>
 #include <filesystem>
 #include <memory>
 #include <string>
-
-// GUI entry point. The Phase-1 diagnostic CLI lives separately in
-// src/app/diagnostic_main.cpp (target: flowspace-diag, console subsystem).
 
 namespace fs = std::filesystem;
 
@@ -32,7 +30,6 @@ namespace
     namespace platform = flowspace::platform;
     namespace ui = flowspace::ui;
 
-    // --- constants ---------------------------------------------------------------
     constexpr wchar_t kMutexName[] = L"Local\\FlowSpaceSingleInstance";
     constexpr wchar_t kMessageClassName[] = L"FlowSpaceMessageWindow";
     constexpr UINT WM_APP_TRAY = WM_APP + 1; // tray icon callback message
@@ -75,14 +72,17 @@ namespace
         using Fn = BOOL(WINAPI *)(HANDLE);
         if (const HMODULE user32 = GetModuleHandleW(L"user32.dll"))
         {
-            if (const auto fn = reinterpret_cast<Fn>(GetProcAddress(user32, "SetProcessDpiAwarenessContext")))
+            const FARPROC proc = GetProcAddress(user32, "SetProcessDpiAwarenessContext");
+            Fn fn = nullptr;
+            static_assert(sizeof(fn) == sizeof(proc));
+            std::memcpy(&fn, &proc, sizeof(fn));
+            if (fn)
             {
                 (void)fn(reinterpret_cast<HANDLE>(static_cast<intptr_t>(-4)));
             }
         }
     }
 
-    // --- application context -----------------------------------------------------
     struct AppContext
     {
         HINSTANCE hinstance = nullptr;
@@ -113,7 +113,9 @@ namespace
             ctx.monitors = &monitors;
             ctx.startup = &startup;
             ctx.onConfigSaved = [this]
-            { OnConfigSaved(); };
+            {
+                OnConfigSaved();
+            };
             return ctx;
         }
 
@@ -141,7 +143,6 @@ namespace
 
         void BuildTrayMenu(HMENU menu)
         {
-            // Per-monitor workspace switching section.
             const auto monitorsList = engine->GetMonitors();
             for (size_t m = 0; m < monitorsList.size() && m < 8; ++m)
             {
@@ -153,8 +154,10 @@ namespace
                 for (size_t w = 0; w < workspaceList.size() && w < 20; ++w)
                 {
                     const UINT id = kTrayMenuBase + 100 + static_cast<UINT>(m) * 25 + static_cast<UINT>(w);
-                    std::wstring text = std::to_wstring(w + 1) + L"  " + flowspace::core::Utf8ToWide(workspaceList[w].name);
-                    const UINT flags = MF_STRING | (workspaceList[w].id == monitorsList[m].activeWorkspaceId ? MF_CHECKED : 0);
+                    std::wstring text =
+                        std::to_wstring(w + 1) + L"  " + flowspace::core::Utf8ToWide(workspaceList[w].name);
+                    const UINT flags =
+                        MF_STRING | (workspaceList[w].id == monitorsList[m].activeWorkspaceId ? MF_CHECKED : 0);
                     AppendMenuW(sub, flags, id, text.c_str());
                 }
                 AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(sub), label.c_str());
@@ -182,7 +185,7 @@ namespace
             {
                 DestroyWindow(messageWindow);
             }
-            else if (cmd >= kTrayMenuBase + 100)
+            else if (cmd >= static_cast<int>(kTrayMenuBase + 100))
             {
                 const int offset = cmd - (kTrayMenuBase + 100);
                 engine->SwitchMonitorToWorkspaceIndex(offset / 25, offset % 25);
@@ -245,15 +248,15 @@ namespace
             }
             switch (resolved->first)
             {
-            case flowspace::core::HotkeyAction::OpenWorkspaceSwitcher:
-                OpenSwitcherPopup();
-                break;
-            case flowspace::core::HotkeyAction::OpenSettings:
-                engine->CaptureForegroundWindowInfo();
-                flowspace::ui::MainWindow::Open(hinstance, MainWindowContext());
-                break;
-            default:
-                break;
+                case flowspace::core::HotkeyAction::OpenWorkspaceSwitcher:
+                    OpenSwitcherPopup();
+                    break;
+                case flowspace::core::HotkeyAction::OpenSettings:
+                    engine->CaptureForegroundWindowInfo();
+                    flowspace::ui::MainWindow::Open(hinstance, MainWindowContext());
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -262,47 +265,46 @@ namespace
             auto *app = reinterpret_cast<AppContext *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
             switch (msg)
             {
-            case WM_CREATE:
-            {
-                auto create = reinterpret_cast<CREATESTRUCTW *>(lParam);
-                SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(create->lpCreateParams));
-                return 0;
-            }
-            case WM_HOTKEY:
-                if (app)
+                case WM_CREATE:
                 {
-                    app->HandleHotkey(wParam);
+                    auto create = reinterpret_cast<CREATESTRUCTW *>(lParam);
+                    SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(create->lpCreateParams));
+                    return 0;
                 }
-                return 0;
-            case WM_DISPLAYCHANGE:
-                if (app)
-                {
-                    app->engine->HandleDisplayChange();
-                }
-                return 0;
-            case WM_APP_TRAY:
-                if (app)
-                {
-                    const int cmd = app->tray.HandleCallbackMessage(lParam);
-                    if (cmd == -1)
+                case WM_HOTKEY:
+                    if (app)
                     {
-                        app->engine->CaptureForegroundWindowInfo();
-                        flowspace::ui::MainWindow::Open(app->hinstance, app->MainWindowContext());
+                        app->HandleHotkey(wParam);
                     }
-                    else if (cmd > 0)
+                    return 0;
+                case WM_DISPLAYCHANGE:
+                    if (app)
                     {
-                        app->HandleTrayCommand(cmd);
+                        app->engine->HandleDisplayChange();
                     }
-                }
-                return 0;
-            case WM_DESTROY:
-                PostQuitMessage(0);
-                return 0;
+                    return 0;
+                case WM_APP_TRAY:
+                    if (app)
+                    {
+                        const int cmd = app->tray.HandleCallbackMessage(lParam);
+                        if (cmd == -1)
+                        {
+                            app->engine->CaptureForegroundWindowInfo();
+                            flowspace::ui::MainWindow::Open(app->hinstance, app->MainWindowContext());
+                        }
+                        else if (cmd > 0)
+                        {
+                            app->HandleTrayCommand(cmd);
+                        }
+                    }
+                    return 0;
+                case WM_DESTROY:
+                    PostQuitMessage(0);
+                    return 0;
             }
             return DefWindowProcW(hwnd, msg, wParam, lParam);
         }
 
-        // One-time initialization after the message window exists.
         bool Initialize()
         {
             config->Load();
@@ -329,7 +331,9 @@ namespace
                                 break;
                             }
                         }
-                        flowspace::ui::SwitchNotification::Show(hinstance, mon, ws, number, config->Get().settings.overlayAnimation, config->Get().settings.overlayAnimationMs);
+                        flowspace::ui::SwitchNotification::Show(hinstance, mon, ws, number,
+                                                                config->Get().settings.overlayAnimation,
+                                                                config->Get().settings.overlayAnimationMs);
                         return;
                     }
                 }
@@ -347,26 +351,39 @@ namespace
             ApplyStartupEntry();
 
             tray.Initialize(messageWindow, WM_APP_TRAY, kTrayMenuBase);
-            tray.SetWorkspaceMenuBuilder([this](HMENU menu)
-                                         { BuildTrayMenu(menu); });
+            tray.SetWorkspaceMenuBuilder([this](HMENU menu) { BuildTrayMenu(menu); });
             tray.Update(config->Get().settings.paused);
 
-            // WinEvent hooks: callbacks are delivered on this thread via the message loop,
-            // serialized with all other engine work.
+            // These hooks run on the main thread with the rest of the app.
             const DWORD threadId = GetCurrentThreadId();
-            hooks.Install(threadId, [this](DWORD event, HWND hwnd, LONG, LONG)
+            hooks.Install(threadId,
+                          [this](DWORD event, HWND hwnd, LONG, LONG)
                           {
-                using ET = flowspace::engine::WindowEventType;
-                switch (event)
-                {
-                case EVENT_OBJECT_CREATE:    engine->HandleWindowEvent(ET::Created, hwnd); break;
-                case EVENT_OBJECT_SHOW:      engine->HandleWindowEvent(ET::Shown, hwnd); break;
-                case EVENT_OBJECT_HIDE:      engine->HandleWindowEvent(ET::Hidden, hwnd); break;
-                case EVENT_OBJECT_DESTROY:   engine->HandleWindowEvent(ET::Destroyed, hwnd); break;
-                case EVENT_SYSTEM_MOVESIZEEND: engine->HandleWindowEvent(ET::MoveSizeEnd, hwnd); break;
-                case EVENT_SYSTEM_FOREGROUND:  engine->HandleWindowEvent(ET::Foreground, hwnd); break;
-                default: break;
-                } });
+                              using ET = flowspace::engine::WindowEventType;
+                              switch (event)
+                              {
+                                  case EVENT_OBJECT_CREATE:
+                                      engine->HandleWindowEvent(ET::Created, hwnd);
+                                      break;
+                                  case EVENT_OBJECT_SHOW:
+                                      engine->HandleWindowEvent(ET::Shown, hwnd);
+                                      break;
+                                  case EVENT_OBJECT_HIDE:
+                                      engine->HandleWindowEvent(ET::Hidden, hwnd);
+                                      break;
+                                  case EVENT_OBJECT_DESTROY:
+                                      engine->HandleWindowEvent(ET::Destroyed, hwnd);
+                                      break;
+                                  case EVENT_SYSTEM_MOVESIZEEND:
+                                      engine->HandleWindowEvent(ET::MoveSizeEnd, hwnd);
+                                      break;
+                                  case EVENT_SYSTEM_FOREGROUND:
+                                      engine->HandleWindowEvent(ET::Foreground, hwnd);
+                                      break;
+                                  default:
+                                      break;
+                              }
+                          });
 
             // Report conflicts found during hotkey registration (also visible in the UI page).
             return true;
@@ -387,7 +404,6 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int nCmdShow)
     (void)lpCmdLine;
     (void)nCmdShow;
 
-    // Single instance guard.
     HANDLE mutex = CreateMutexW(nullptr, TRUE, kMutexName);
     if (mutex == nullptr || GetLastError() == ERROR_ALREADY_EXISTS)
     {
@@ -402,7 +418,6 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int nCmdShow)
     InitializeLogging();
     EnablePerMonitorDpiAwareness();
 
-    // COM (STA) for shell APIs.
     HRESULT comHr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (FAILED(comHr))
     {
@@ -421,24 +436,21 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int nCmdShow)
     app.journalPath = dataDir + L"\\journal.json";
     app.recovery = std::make_unique<flowspace::core::RecoveryManager>(app.journalPath);
     app.config = std::make_unique<flowspace::core::ConfigService>(app.configPath, app.backupPath);
-    app.engine = std::make_unique<flowspace::engine::WorkspaceEngine>(
-        app.monitors, app.windows, app.workspaces, *app.config, *app.recovery,
-        app.hotkeys);
+    app.engine = std::make_unique<flowspace::engine::WorkspaceEngine>(app.monitors, app.windows, app.workspaces,
+                                                                      *app.config, *app.recovery, app.hotkeys);
 
-    // UI classes.
     flowspace::ui::RegisterSwitchNotificationClass(hInstance);
     flowspace::ui::RegisterSwitcherClass(hInstance);
     flowspace::ui::MainWindow::RegisterMainWindowClass(hInstance);
 
-    // Hidden message window: receives WM_HOTKEY, WM_DISPLAYCHANGE and the tray callback.
     WNDCLASSW wc{};
     wc.lpfnWndProc = &AppContext::MessageWndProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = kMessageClassName;
     RegisterClassW(&wc);
 
-    app.messageWindow = CreateWindowExW(0, kMessageClassName, L"FlowSpace", WS_OVERLAPPED,
-                                        0, 0, 0, 0, nullptr, nullptr, hInstance, &app);
+    app.messageWindow = CreateWindowExW(0, kMessageClassName, L"FlowSpace", WS_OVERLAPPED, 0, 0, 0, 0, nullptr, nullptr,
+                                        hInstance, &app);
     if (!app.messageWindow)
     {
         spdlog::error("Failed to create the message window (GetLastError={})", GetLastError());
@@ -459,7 +471,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int nCmdShow)
 
     spdlog::info("FlowSpace started.");
 
-    // Standard message loop; everything (hotkeys, hooks, tray, UI) runs on this thread.
+    // The message loop keeps hotkeys, window events, and UI updates on one thread.
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0)
     {

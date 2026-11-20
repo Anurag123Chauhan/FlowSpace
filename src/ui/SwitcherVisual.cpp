@@ -20,8 +20,11 @@ namespace flowspace::ui::visual
     COLORREF Tint(COLORREF base, COLORREF accent, double amount)
     {
         auto mix = [amount](int a, int b)
-        { return static_cast<int>(a + (b - a) * amount + 0.5); };
-        return RGB(mix(GetRValue(base), GetRValue(accent)), mix(GetGValue(base), GetGValue(accent)), mix(GetBValue(base), GetBValue(accent)));
+        {
+            return static_cast<int>(a + (b - a) * amount + 0.5);
+        };
+        return RGB(mix(GetRValue(base), GetRValue(accent)), mix(GetGValue(base), GetGValue(accent)),
+                   mix(GetBValue(base), GetBValue(accent)));
     }
 
     void DrawMonitorIcon(HDC dc, int left, int top, int size, COLORREF color, double scale)
@@ -49,7 +52,8 @@ namespace flowspace::ui::visual
         DeleteObject(pen);
     }
 
-    void ApplyCardAlpha(uint32_t *pixels, int width, int height, const RECT &card, int radius, int shadowMargin, int panelAlpha, double scale, COLORREF border)
+    void ApplyCardAlpha(uint32_t *pixels, int width, int height, const RECT &card, int radius, int shadowMargin,
+                        int panelAlpha, double scale, COLORREF border)
     {
         const double cx = (card.left + card.right) * 0.5;
         const double cy = (card.top + card.bottom) * 0.5;
@@ -88,7 +92,8 @@ namespace flowspace::ui::visual
                         bb = GetBValue(border);
                     }
                     // UpdateLayeredWindow expects premultiplied alpha.
-                    row[x] = (static_cast<uint32_t>(a) << 24) | (static_cast<uint32_t>(bb * a / 255) << 16) | (static_cast<uint32_t>(gg * a / 255) << 8) | static_cast<uint32_t>(rr * a / 255);
+                    row[x] = (static_cast<uint32_t>(a) << 24) | (static_cast<uint32_t>(bb * a / 255) << 16) |
+                             (static_cast<uint32_t>(gg * a / 255) << 8) | static_cast<uint32_t>(rr * a / 255);
                 }
                 else
                 {

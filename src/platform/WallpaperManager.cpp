@@ -32,26 +32,19 @@ namespace flowspace::platform
     WallpaperManager::WallpaperManager()
     {
         // The caller is expected to have initialized COM (STA on the UI thread).
-        HRESULT hr = CoCreateInstance(
-            kCLSID_DesktopWallpaper,
-            nullptr,
-            CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
-            kIID_IDesktopWallpaper,
-            reinterpret_cast<void **>(&wallpaper_));
+        HRESULT hr = CoCreateInstance(kCLSID_DesktopWallpaper, nullptr, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
+                                      kIID_IDesktopWallpaper, reinterpret_cast<void **>(&wallpaper_));
         if (FAILED(hr) || !wallpaper_)
         {
             // Some builds register the coclass only under the WOW64 hive; retry without
             // restricting activation context.
-            hr = CoCreateInstance(
-                kCLSID_DesktopWallpaper,
-                nullptr,
-                CLSCTX_ALL,
-                kIID_IDesktopWallpaper,
-                reinterpret_cast<void **>(&wallpaper_));
+            hr = CoCreateInstance(kCLSID_DesktopWallpaper, nullptr, CLSCTX_ALL, kIID_IDesktopWallpaper,
+                                  reinterpret_cast<void **>(&wallpaper_));
         }
         if (FAILED(hr) || !wallpaper_)
         {
-            spdlog::error("IDesktopWallpaper COM object unavailable (hr=0x{:08X}). Wallpaper features disabled.", static_cast<uint32_t>(hr));
+            spdlog::error("IDesktopWallpaper COM object unavailable (hr=0x{:08X}). Wallpaper features disabled.",
+                          static_cast<uint32_t>(hr));
             wallpaper_ = nullptr;
         }
         else
@@ -156,8 +149,7 @@ namespace flowspace::platform
         {
             spdlog::error("SetWallpaper('{}','{}') failed (hr=0x{:08X})",
                           std::string(monitorDevicePath.begin(), monitorDevicePath.end()),
-                          std::string(imagePath.begin(), imagePath.end()),
-                          static_cast<uint32_t>(hr));
+                          std::string(imagePath.begin(), imagePath.end()), static_cast<uint32_t>(hr));
             return false;
         }
         return true;
