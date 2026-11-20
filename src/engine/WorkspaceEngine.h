@@ -8,11 +8,11 @@
 #include "platform/MonitorManager.h"
 #include "platform/ProcessInfo.h"
 #include "platform/WindowManager.h"
-#include "platform/WallpaperManager.h"
 
 #include <Windows.h>
 #include <dwmapi.h>
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -48,9 +48,9 @@ namespace flowspace::engine
     /// <summary>
     /// The workspace engine. Owns the hidden message window that receives WM_HOTKEY,
     /// WM_DISPLAYCHANGE and WinEvent hook callbacks, and orchestrates workspace switching:
-    /// window discovery, assignment resolution, hide/show with recovery journaling, wallpaper
-    /// application and overlay display. All state-changing operations run on the main thread's
-    /// message loop, which serializes them by construction — no overlapping switches.
+    /// window discovery, assignment resolution, hide/show with recovery journaling, and
+    /// overlay display. All state-changing operations run on the main thread's message loop,
+    /// which serializes them by construction — no overlapping switches.
     /// </summary>
     class WorkspaceEngine
     {
@@ -60,16 +60,15 @@ namespace flowspace::engine
                         core::WorkspaceManager &workspaces,
                         core::ConfigService &config,
                         core::RecoveryManager &recovery,
-                        platform::WallpaperManager &wallpaper,
                         platform::HotkeyManager &hotkeys);
 
         // Creates nothing; the message window is created by the app and passed here.
         void Attach(HWND messageWindow);
 
-        // Startup sequence: reconcile monitors, apply persisted state, capture wallpapers on
-        // first run, restore journal-hidden windows from a previous crash, register hotkeys.
+        // Startup sequence: reconcile monitors, apply persisted state, restore journal-hidden
+        // windows from a previous crash, register hotkeys.
         void Initialize();
-        void Shutdown(bool restoringWallpaper);
+        void Shutdown();
 
         // --- Actions (called from hotkeys, tray, and the settings UI) ---
         SwitchResult SwitchMonitorToWorkspace(const std::wstring &monitorStableId, const std::string &workspaceId);
@@ -95,26 +94,30 @@ namespace flowspace::engine
         // Re-applies hotkeys after shortcut changes; returns conflicts for the UI.
         std::vector<std::wstring> ApplyHotkeys();
 
-        // Re-applies the wallpaper of the given monitor from its active workspace immediately.
-        void ApplyWallpaperForMonitor(const std::wstring &monitorStableId);
-
         // --- UI facade (settings window convenience accessors) ---
-        [[nodiscard]] std::vector<core::Workspace> GetWorkspaces() const; // sorted by orderIndex
-        [[nodiscard]] core::Workspace &WorkspaceAt(size_t index);         // mutable reference for editors
+        [[nodiscard]] std::vector<core::Workspace> GetWorkspaces() const; // all workspaces, grouped by monitor
+        [[nodiscard]] std::vector<core::Workspace> GetWorkspacesForMonitor(const std::wstring &monitorStableId) const;
+        [[nodiscard]] core::Workspace &WorkspaceAt(size_t index);         // global index into GetWorkspaces()
         [[nodiscard]] std::vector<core::MonitorInfo> GetMonitors() const;
         [[nodiscard]] core::WindowInfo GetForegroundWindowInfo() const;
-        std::string CreateWorkspace(const std::string &name);
+        [[nodiscard]] std::optional<core::WindowInfo> GetLastFocusedWindowInfo() const;
+        [[nodiscard]] std::optional<std::string> GetActiveWorkspaceId(const std::wstring &monitorStableId) const;
+        // Capture the current foreground window for use by "+ Add rule" (called when Settings opens).
+        void CaptureForegroundWindowInfo();
+        std::string CreateWorkspace(const std::string &name, const std::wstring &monitorStableId);
         void RenameWorkspaceIndex(int index, const std::string &name);
         void DuplicateWorkspaceIndex(int index);
         void ResetWorkspaceIndex(int index);
         void DeleteWorkspaceIndex(int index);
-        void SetWorkspaceWallpaperIndex(int index, const std::wstring &imagePath);
         void SwitchMonitorToWorkspaceIndex(int monitorIndex, int workspaceIndex);
         void RevealSingleWindow(HWND hwnd);
-        void RestoreOriginalWallpaperForMonitorIndex(int monitorIndex);
+        // Copies the workspace manager's state into the config so the next Save persists it.
+        void PersistWorkspacesToConfig();
 
-        // Captures the user's current wallpapers once, on first activation.
-        void CaptureOriginalWallpapers();
+        // Applies app rules to all currently open windows, moving each matching window
+        // to its assigned workspace on the correct monitor. Called at startup so existing
+        // windows are placed according to rules.
+        void ApplyRulesToOpenWindows();
 
         // UI callback: show the switch overlay for a workspace on a monitor.
         std::function<void(const core::Workspace &, const std::wstring &monitorStableId)> OnOverlayShow;
@@ -148,9 +151,11 @@ namespace flowspace::engine
         core::WorkspaceManager &workspaces_;
         core::ConfigService &config_;
         core::RecoveryManager &recovery_;
-        platform::WallpaperManager &wallpaper_;
         platform::HotkeyManager &hotkeys_;
         HWND messageWindow_ = nullptr;
         bool switchInProgress_ = false;
+        // Last focused manageable (non-FlowSpace) window — used by the "+ Add rule" UI
+        // because clicking the button makes FlowSpace Settings the foreground window.
+        std::optional<core::WindowInfo> lastFocusedWindowInfo_;
     };
 }

@@ -64,18 +64,22 @@ Source layout:
 ### `core/Models.h` — shared data model
 - `Rect` — integer rectangle with `width()`, `height()`, `Contains()`.
 - `MonitorInfo` — stableId, deviceName, friendlyName, runtimeHandle (transient HMONITOR), bounds, workArea, dpiX/Y, isPrimary, isConnected, activeWorkspaceId.
-- `Workspace` — id, name, icon, accentColor, orderIndex, defaultWallpaperPath, wallpaperFit, wallpaperBackgroundColor, perMonitorWallpaper, perMonitorWallpaperFit, overlay fields.
+- `Workspace` — id, name, icon, accentColor, orderIndex (position within the owning monitor's list), **monitorStableId** (the monitor that owns this workspace; empty = unassigned legacy workspace adopted at runtime), defaultWallpaperPath, wallpaperFit, wallpaperBackgroundColor, perMonitorWallpaper, perMonitorWallpaperFit, overlay fields.
 - `WindowVisibilityState` — Visible, Minimized, Maximized, HiddenBySystem, CloakedByDwm, HiddenByFlowSpace.
 - `WindowInfo` — hwnd, processId, threadId, processCreationTime, title, className, executablePath, executableName, monitorStableId, assignedWorkspaceId, visibilityState, isManageable, exclusionReason.
 
 ### `core/WorkspaceManager` — domain state
-- Monitor reconciliation (`ReconcileMonitors`), CRUD for workspaces (`Create`/`Rename`/`Reorder`/`Delete`/`Duplicate`/`Reset`), per-monitor active workspace (`SetActiveWorkspace`/`GetActiveWorkspaceId`/`ResolveAdjacentWorkspaceId`), window assignment tracking (`SyncDiscoveredWindows`/`AssignWindowToWorkspace`/`ForgetWindow`), window queries (`GetWindow`/`GetTrackedWindows`/`GetWindowsForMonitorAndWorkspace`).
+- Per-monitor workspace ownership: each `Workspace` carries `monitorStableId`; switching, numbering, adjacency, deletion and renaming are always resolved inside that monitor's own ordered list.
+- Monitor reconciliation (`ReconcileMonitors`): connected monitors with no workspaces adopt unassigned (legacy) workspaces or receive a clone of an existing monitor's set; every connected monitor always has ≥1 workspace.
+- Per-monitor active workspace (`SetActiveWorkspace`/`GetActiveWorkspaceId`/`ResolveAdjacentWorkspaceId`) — `SetActiveWorkspace` rejects cross-monitor references.
+- CRUD for workspaces (`Create`/`Rename`/`Reorder`/`Delete`/`Duplicate`/`Reset`), each scoped to the owner monitor; a monitor's last workspace can never be deleted.
+- Window assignment tracking (`SyncDiscoveredWindows`/`AssignWindowToWorkspace`/`ForgetWindow`) — cross-monitor assignment is refused.
 - `MutableWorkspaces()` returns a raw pointer — deliberately no lock; the settings UI edits on the same thread that owns the manager.
 
 ### `core/ConfigService` — config persistence
-- `Load()` → `ConfigLoadStatus` (`Loaded` / `RecoveredFromBackup` / `FreshDefaults`). Schema migration v0→v1. Normalization (renumber orderIndex, drop duplicates, repair colors, drop dangling monitorState refs, drop empty hotkeys).
+- `Load()` → `ConfigLoadStatus` (`Loaded` / `RecoveredFromBackup` / `FreshDefaults`). Schema migration v0→v1→v2 (per-monitor workspaces). Normalization (renumber orderIndex per monitor, drop duplicates, repair colors, validate monitorState references belong to the referenced monitor).
 - `Save()` → atomic write: rotate main → backup, write temp, rename.
-- `Config` holds `Settings`, `workspaces`, `appRules`, `hotkeys`, `monitorState`, `originalWallpapers`.
+- `Config` holds `Settings`, `workspaces`, `appRules`, `hotkeys`, `monitorState`, `originalWallpapers`. Each workspace now carries a `monitor` field (stableId) so lists split per display at load time.
 
 ### `core/RecoveryManager` — recovery journal
 - `RecordHide()` persists hwnd + process identity (PID + creation time + exe path + title) to `journal.json` (write-to-temp + rename). Called *before* the window is hidden.
@@ -199,7 +203,7 @@ Compile definitions: `UNICODE`, `_UNICODE`, `_WIN32_WINNT=0x0A00`, `NTDDI_VERSIO
 2. `WorkspaceEngine::ApplySwitch`:
    a. `WindowManager::DiscoverWindows` → `WorkspaceManager::SyncDiscoveredWindows`
    b. For each tracked window on the target monitor: if assigned to target workspace → `ShowWindowInternal` + `RecoveryManager::RecordShow`; if assigned elsewhere and visible → `HideWindowInternal` → `RecoveryManager::RecordHide` (before `ShowWindowAsync(SW_HIDE)`) + `WorkspaceManager::SetWindowState(HiddenByFlowSpace)`.
-   c. `WorkspaceManager::SetActiveWorkspace(monitor, workspaceId)`; `config.monitorState[monitor] = workspaceId`.
+   c. `WorkspaceManager::SetActiveWorkspace(monitor, workspaceId)`; `config.monitorState[monitor] = workspaceId`; `PersistWorkspacesToConfig()` syncs `workspaces_` into `config.workspaces` before saving.
    d. `ApplyWallpaperForMonitor` → `WallpaperManager::SetWallpaper`.
    e. `OnOverlayShow` → `SwitchNotification::Show`.
    f. `config.Save()`; `OnStateChanged()` → tray + settings refresh.
@@ -208,7 +212,7 @@ Compile definitions: `UNICODE`, `_UNICODE`, `_WIN32_WINNT=0x0A00`, `NTDDI_VERSIO
 `WorkspaceEngine::Initialize` → `RecoveryManager::Entries()` → for each entry: validate `IsWindow` + `WindowManager::IsWindowFromProcess` (PID/exe/creation time) → if hidden, `WindowManager::ShowWindowFast` → `RecoveryManager::RecordShow`.
 
 **Display change (`WM_DISPLAYCHANGE`):**
-`WorkspaceEngine::HandleDisplayChange` → `MonitorManager::EnumerateMonitors` → `WorkspaceManager::ReconcileMonitors` (preserve activeWorkspaceId on reconnect) → apply `config.monitorState` → `config.Save()` → `OnStateChanged`.
+`WorkspaceEngine::HandleDisplayChange` → `MonitorManager::EnumerateMonitors` → `WorkspaceManager::ReconcileMonitors` (preserve activeWorkspaceId on reconnect) → apply `config.monitorState` → `PersistWorkspacesToConfig()` → `config.Save()` → `OnStateChanged`.
 
 **New window (`EVENT_OBJECT_CREATE`):**
 `HandleWindowEvent` → `ProcessNewWindow` → `DiscoverWindows` → `SyncDiscoveredWindows` → `ResolveAssignmentForNewWindow` (app rules → group-by-application → monitor active workspace) → `AssignWindowToWorkspace` → optional `MoveWindowToMonitor`.

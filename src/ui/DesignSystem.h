@@ -23,76 +23,67 @@ namespace flowspace::ui
 
     struct ThemeTokens
     {
-        // Surfaces.
-        COLORREF bg = RGB(17, 19, 24);       // #111318 application background
-        COLORREF sidebar = RGB(22, 25, 31);  // #16191F left navigation
-        COLORREF surface = RGB(28, 32, 40);  // #1C2028 primary surface
-        COLORREF elevated = RGB(37, 43, 53); // #252B35 elevated surface
-        COLORREF border = RGB(48, 55, 68);   // #303744 border
+        // Surfaces — Neutral Graphite (desaturated, warm-leaning greys; no blue tint).
+        COLORREF bg = RGB(26, 26, 26);           // #1A1A1A application background
+        COLORREF sidebar = RGB(22, 22, 22);      // #161616 left navigation
+        COLORREF surface = RGB(34, 34, 34);      // #222222 primary surface
+        COLORREF elevated = RGB(42, 42, 42);     // #2A2A2A elevated surface
+        COLORREF border = RGB(58, 58, 58);       // #3A3A3A neutral grey border
 
         // Text.
-        COLORREF text = RGB(241, 243, 247);    // #F1F3F7 primary text
-        COLORREF textDim = RGB(146, 155, 170); // #929BAA secondary text
+        COLORREF text = RGB(232, 232, 232);      // #E8E8E8 primary text
+        COLORREF textDim = RGB(154, 154, 154);   // #9A9A9A secondary text
         COLORREF textOnAccent = RGB(255, 255, 255);
 
-        // Interactive.
-        COLORREF accent = RGB(87, 155, 255); // #579BFF accent blue
-        COLORREF accentHover = RGB(74, 143, 240);
-        COLORREF accentActive = RGB(54, 128, 224);
-        COLORREF inputBg = RGB(24, 27, 32); // input field background
-        COLORREF inputBorder = RGB(48, 55, 68);
+        // Interactive — Muted Bronze accent (desaturated brown-orange).
+        COLORREF accent = RGB(168, 126, 90);     // #A87E5A muted bronze
+        COLORREF accentHover = RGB(150, 110, 78);
+        COLORREF accentActive = RGB(130, 95, 68);
+        COLORREF inputBg = RGB(38, 38, 38);      // input field background
+        COLORREF inputBorder = RGB(58, 58, 58);
 
         // States.
-        COLORREF hover = RGB(42, 49, 60);    // subtle hover on surfaces
-        COLORREF selected = RGB(51, 63, 80); // selected row background
-        COLORREF disabled = RGB(70, 76, 86);
-        COLORREF disabledText = RGB(110, 118, 128);
+        COLORREF hover = RGB(46, 46, 46);        // subtle hover on surfaces
+        COLORREF selected = RGB(51, 51, 51);     // selected row background
+        COLORREF disabled = RGB(70, 70, 70);
+        COLORREF disabledText = RGB(128, 128, 128);
 
-        // Semantic.
+        // Semantic — kept distinct and readable in both themes.
         COLORREF success = RGB(46, 160, 67);
-        COLORREF warning = RGB(240, 136, 62);
-        COLORREF error = RGB(229, 83, 75);
+        COLORREF warning = RGB(210, 135, 60);
+        COLORREF error = RGB(196, 78, 70);
 
-        // Workspace accent presets (user-configurable accents).
+        // Workspace accent presets (user-configurable accents) — softer, less saturated.
         static constexpr const wchar_t *kAccentPresets[] = {
-            L"#4389D8",
-            L"#2EA043",
-            L"#D29922",
-            L"#A371F7",
-            L"#DB61A2",
-            L"#E5534B",
-            L"#F0883E",
-            L"#3FB950",
-            L"#39C5CF",
-            L"#58A6FF",
-            L"#BC8CFF",
-            L"#8B949E",
+            L"#A87E5A", L"#8A9A7E", L"#C9A25E", L"#9A7AA0", L"#B87A7A", L"#D16B5A",
+            L"#D49A6E", L"#7E9FA0", L"#8FA8C4", L"#A09C7E", L"#C48FA0", L"#8A8A8A",
         };
     };
 
     // Light theme tokens (overrides the dark defaults).
     struct LightThemeTokens
     {
-        COLORREF bg = RGB(245, 246, 248);       // #F5F6F8
-        COLORREF sidebar = RGB(255, 255, 255);  // #FFFFFF
-        COLORREF surface = RGB(255, 255, 255);  // #FFFFFF
-        COLORREF elevated = RGB(238, 241, 245); // #EEF1F5
-        COLORREF border = RGB(225, 229, 235);   // #E1E5EB
-        COLORREF text = RGB(32, 38, 49);        // #202631
-        COLORREF textDim = RGB(105, 117, 134);  // #697586
+        // Surfaces — Warm Stone (warm off-whites; no cool blue-grey).
+        COLORREF bg = RGB(245, 241, 235);        // #F5F1EB warm off-white
+        COLORREF sidebar = RGB(255, 255, 255);   // #FFFFFF
+        COLORREF surface = RGB(255, 255, 255);   // #FFFFFF
+        COLORREF elevated = RGB(238, 230, 221);  // #EEE6DD warm stone
+        COLORREF border = RGB(216, 208, 196);    // #D8D0C4 warm neutral grey
+        COLORREF text = RGB(42, 42, 42);         // #2A2A2A
+        COLORREF textDim = RGB(122, 122, 122);   // #7A7A7A
         COLORREF textOnAccent = RGB(255, 255, 255);
-        COLORREF accent = RGB(40, 120, 219); // #2878DB
-        COLORREF accentHover = RGB(33, 106, 193);
-        COLORREF accentActive = RGB(26, 89, 164);
+        COLORREF accent = RGB(168, 126, 90);     // #A87E5A muted bronze
+        COLORREF accentHover = RGB(150, 110, 78);
+        COLORREF accentActive = RGB(130, 95, 68);
         COLORREF inputBg = RGB(255, 255, 255);
-        COLORREF inputBorder = RGB(225, 229, 235);
-        COLORREF hover = RGB(235, 239, 244);
-        COLORREF selected = RGB(226, 232, 240);
-        COLORREF disabled = RGB(229, 233, 238);
-        COLORREF disabledText = RGB(169, 176, 185);
+        COLORREF inputBorder = RGB(216, 208, 196);
+        COLORREF hover = RGB(245, 238, 230);     // #F5EEE6
+        COLORREF selected = RGB(238, 230, 221);  // #EEE6DD
+        COLORREF disabled = RGB(235, 230, 224);  // #EBE6E0
+        COLORREF disabledText = RGB(178, 178, 178);
         COLORREF success = RGB(46, 160, 67);
-        COLORREF warning = RGB(240, 136, 62);
-        COLORREF error = RGB(229, 83, 75);
+        COLORREF warning = RGB(210, 135, 60);
+        COLORREF error = RGB(196, 78, 70);
     };
 
     // ---------------------------------------------------------------------------
