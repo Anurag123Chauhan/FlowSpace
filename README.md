@@ -4,6 +4,10 @@
 
 FlowSpace gives every monitor its own independent set of workspaces. Switch workspaces on one screen without touching the others — like virtual desktops, but per monitor. Your windows, wallpapers, and focus stay exactly where you put them.
 
+## GitHub topics
+
+[`windows`](https://github.com/topics/windows) · [`virtual-desktop`](https://github.com/topics/virtual-desktop) · [`window-manager`](https://github.com/topics/window-manager) · [`multi-monitor`](https://github.com/topics/multi-monitor) · [`productivity`](https://github.com/topics/productivity) · [`cpp`](https://github.com/topics/cpp) · [`cpp23`](https://github.com/topics/cpp23) · [`win32`](https://github.com/topics/win32)
+
 ## How FlowSpace makes life easier
 
 | Situation | Without FlowSpace | With FlowSpace |
@@ -61,6 +65,10 @@ Open Settings (`Ctrl+Alt+O` or tray → Open Settings) to:
 ### App rules
 
 App rules send matching applications to a workspace automatically.
+
+![Screen recording: a two-monitor setup showing FlowSpace workspaces switching independently and an app rule placing a matching window in its target workspace](docs/assets/app-rules-two-monitors.gif)
+
+*Screen recording of a two-monitor setup. Each display keeps its own workspace, and app rules send matching windows to the configured target.*
 
 **Add a rule in Settings:**
 
