@@ -157,7 +157,8 @@ jobs:
 
           gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -ne 0) {
-              gh release create $tag --repo $env:GITHUB_REPOSITORY --generate-notes
+              $intro = 'FlowSpace — Independent virtual desktops for each monitor on Windows.'
+              gh release create $tag --repo $env:GITHUB_REPOSITORY --notes $intro --generate-notes
               if ($LASTEXITCODE -ne 0) {
                   throw "Could not create release $tag"
               }

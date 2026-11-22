@@ -1,86 +1,107 @@
 # FlowSpace
 
-**One PC, many workspaces — one per monitor.**
+**FlowSpace — Independent virtual desktops for each monitor on Windows.**
 
-FlowSpace gives every monitor its own independent set of workspaces. Switch workspaces on one screen without touching the others — like virtual desktops, but per monitor. Your windows, wallpapers, and focus stay exactly where you put them.
+![Animated demo: switching one monitor's workspace while the other stays unchanged](docs/assets/monitor-switching.svg)
 
-## GitHub topics
+## Download for Windows
 
-[`windows`](https://github.com/topics/windows) · [`virtual-desktop`](https://github.com/topics/virtual-desktop) · [`window-manager`](https://github.com/topics/window-manager) · [`multi-monitor`](https://github.com/topics/multi-monitor) · [`productivity`](https://github.com/topics/productivity) · [`cpp`](https://github.com/topics/cpp) · [`cpp23`](https://github.com/topics/cpp23) · [`win32`](https://github.com/topics/win32)
+[**Download the latest FlowSpace release**](https://github.com/Anurag123Chauhan/FlowSpace/releases/latest) — choose the recommended installer or the portable ZIP. No compiler or source code needed.
 
-## How FlowSpace makes life easier
+## Why FlowSpace?
 
-| Situation | Without FlowSpace | With FlowSpace |
-|-----------|-------------------|----------------|
-| **Work + personal on the same PC** | One cluttered desktop, everything mixed together | Monitor 1 = Work (code, email, Slack); Monitor 2 = Personal (music, browser, notes). Switch independently. |
-| **Multitasking across projects** | Alt+Tab through dozens of windows | Each monitor shows only the workspace you need. One hotkey flips the whole screen. |
-| **Accidentally closed or crashed** | Windows are gone | FlowSpace journals hidden windows and restores them on next start — even after a crash or power loss. |
-| **Different moods, different desktops** | Same wallpaper everywhere | Each workspace can have its own wallpaper per monitor. Work = focused; Gaming = vibrant. |
+- **Keep each screen focused.** Give work, personal tasks, and projects their own space without changing what’s open on another monitor.
+- **Switch without closing windows.** If FlowSpace exits unexpectedly, its journal can reveal windows that are still open when you restart the app.
+- **Make each workspace yours.** Name and color workspaces, set per-monitor wallpapers, and use hotkeys to move between them.
 
-## Get started
+## FlowSpace vs. Windows virtual desktops
 
-### Download
+Windows virtual desktops switch your desktop across the display setup. FlowSpace gives each monitor its own independent workspace set: switch the screen under your mouse while the others stay as they are. FlowSpace manages windows on the current Windows desktop; it does not change how Task View works.
 
-Get the latest release from the [Releases page](https://github.com/Anurag123Chauhan/FlowSpace/releases):
+| | Windows virtual desktops | FlowSpace |
+|---|---|---|
+| Switch workspaces independently per monitor | No | **Yes** |
+| Keep windows grouped in separate workspaces | Yes | **Yes** |
+| Assign workspace wallpapers independently per monitor | Not per-monitor | **Yes** |
 
-- **Installer** (`FlowSpace-<version>-windows-x64-setup.exe`) — recommended. Adds Start Menu and optional desktop shortcut.
-- **ZIP** (`FlowSpace-<version>-windows-x64.zip`) — portable. Extract anywhere and run `flowspace.exe`.
+## Installation
 
-No compiler, CMake, or source code needed.
+1. Download the **Installer** (`FlowSpace-<version>-windows-x64-setup.exe`) or **ZIP** (`FlowSpace-<version>-windows-x64.zip`) from the [latest release](https://github.com/Anurag123Chauhan/FlowSpace/releases/latest).
+2. Run the installer, or extract the ZIP and launch `flowspace.exe`.
+3. FlowSpace starts in the system tray. Use the hotkeys below or right-click its tray icon.
 
-### Install & run
+Requires Windows 10 (1903+) or Windows 11, x64. Administrator rights are not required. Configuration and logs are stored in `%LOCALAPPDATA%\FlowSpace\`.
 
-1. Download and run the installer (or extract the ZIP).
-2. FlowSpace starts hidden in the system tray (blue icon).
-3. Configuration and logs live at `%LOCALAPPDATA%\FlowSpace\`.
+To uninstall, exit FlowSpace from the tray, then use **Installed apps** in Windows Settings or **Uninstall FlowSpace** in the Start Menu. See [UNINSTALL.md](UNINSTALL.md).
 
-To uninstall: exit FlowSpace from the tray, then use **Installed apps** in Windows Settings or **Uninstall FlowSpace** from the Start Menu. See [UNINSTALL.md](UNINSTALL.md) for details.
+## Features
 
-## How to use it
+- **Independent per-monitor workspaces** — each monitor has its own workspace list and active selection.
+- **Window hide/show with crash recovery** — FlowSpace logs windows before hiding them so it can reveal still-open windows on its next start.
+- **Per-workspace wallpapers** — assign wallpapers per monitor; original wallpapers can be restored on exit.
+- **Workspaces you can shape** — create, rename, recolor, reorder, duplicate, and delete workspaces.
+- **Global hotkeys** with conflict detection, plus a workspace switcher popup and tray controls.
+- **App Rules** — send matching new windows to a chosen workspace.
+- **Portable or installed** — no admin rights, account, or background service required.
 
-FlowSpace lives in your tray and is controlled mostly by keyboard:
+### Hotkeys
 
-| Hotkey | What it does |
-|--------|--------------|
-| `Ctrl+Alt+Left` / `Ctrl+Alt+Right` | Switch to previous/next workspace on the monitor under your mouse |
-| `Ctrl+Alt+1` … `Ctrl+Alt+9` | Jump directly to workspace 1–9 |
-| `Ctrl+Alt+Shift+Left` / `Ctrl+Alt+Right` | Move the active window to the previous/next workspace |
-| `Ctrl+Alt+Space` | Open the workspace switcher popup (arrows + Enter to select) |
+| Hotkey | Action |
+|---|---|
+| `Ctrl+Alt+Left` / `Ctrl+Alt+Right` | Switch workspace on the monitor under your mouse |
+| `Ctrl+Alt+1` … `Ctrl+Alt+9` | Jump to workspace 1–9 |
+| `Ctrl+Alt+Shift+Left` / `Ctrl+Alt+Shift+Right` | Move the active window to the previous/next workspace |
+| `Ctrl+Alt+Space` | Open the workspace switcher |
 | `Ctrl+Alt+F12` | Reveal all hidden windows |
 | `Ctrl+Alt+O` | Open Settings |
 
-Right-click the tray icon to switch workspaces per monitor, pause, reveal all, or open Settings. Left-click the tray icon to open Settings.
+Left-click the tray icon to open Settings. Right-click it for per-monitor switching, pause, reveal all, and exit.
 
-### Settings
+## FAQ
 
-Open Settings (`Ctrl+Alt+O` or tray → Open Settings) to:
+### Do I need to replace Windows virtual desktops?
 
-- **Workspaces** — create, rename, recolor, reorder, duplicate, or delete workspaces
-- **Wallpaper** — assign a different wallpaper to each workspace, per monitor
-- **Hotkeys** — change or disable shortcuts (conflicts are flagged automatically)
-- **Behavior** — hide vs. minimize windows, start with Windows, pause management, and more
-- **App Rules** — automatically send specific apps (e.g. notepad.exe) to a workspace
-- **Recovery** — view and restore hidden windows from the journal
+No. Use FlowSpace workspaces within the current Windows desktop. Windows keeps control of Task View and any windows it hides on other native desktops.
 
-### App rules
+### Does switching close my apps?
 
-App rules send matching applications to a workspace automatically.
+No. FlowSpace hides windows assigned to other workspaces and shows the selected workspace’s windows. They remain open.
 
-![Screen recording: a two-monitor setup showing FlowSpace workspaces switching independently and an app rule placing a matching window in its target workspace](docs/assets/app-rules-two-monitors.gif)
+### What happens if FlowSpace or Windows crashes?
 
-*Screen recording of a two-monitor setup. Each display keeps its own workspace, and app rules send matching windows to the configured target.*
+FlowSpace can reveal still-open windows when restarted after an app crash. It can’t reopen apps or restore unsaved work after a Windows reboot.
 
-**Add a rule in Settings:**
+### Can I use it without installing?
 
-1. Focus a window of the app you want to assign (for example, Notepad).
-2. Press `Ctrl+Alt+O` and open **App Rules**.
-3. Click **+ Add rule**.
+Yes. Download the portable ZIP, extract it, and run `flowspace.exe`.
 
-FlowSpace captures the `.exe` name of the app you were using before Settings opened, and targets the workspace that was active on the monitor where that app was. The rule is saved immediately. In the App Rules list you can toggle a rule on/off or delete it.
+### How do I remove my settings too?
 
-**Advanced conditions (edit `config.json`):**
+Uninstalling leaves personal configuration and logs in place. To remove them, delete `%LOCALAPPDATA%\FlowSpace\` after exiting FlowSpace. See [UNINSTALL.md](UNINSTALL.md).
 
-The Settings page only shows the executable, target workspace, and on/off state. To narrow a rule by full path or window title, exit FlowSpace from the tray first (it rewrites the config on changes), then edit the `appRules` array in `%LOCALAPPDATA%\FlowSpace\config.json` and start FlowSpace again:
+## Troubleshooting
+
+- **A hotkey does nothing:** another app may already use that shortcut. Open Settings with `Ctrl+Alt+O` or the tray icon, then review **Shortcuts** for conflicts and choose a different binding.
+- **A window is hidden and you need it now:** press `Ctrl+Alt+F12` or choose **Reveal All** from the tray menu.
+- **A workspace or wallpaper is unexpected:** open Settings and check the selected monitor’s workspace list and wallpaper assignment.
+- **FlowSpace is already running:** the app is single-instance; open it from the system tray instead of starting a second copy.
+- **Still stuck?** Open an [issue](https://github.com/Anurag123Chauhan/FlowSpace/issues) and include what you expected, what happened, and relevant log details from `%LOCALAPPDATA%\FlowSpace\logs\flowspace.log`. Remove personal information before sharing logs.
+
+## Contributing
+
+Contributions and bug reports are welcome. For code changes, build with the project’s MinGW-w64 UCRT64, CMake, and Ninja toolchain; run `build\cmake\flowspace_tests.exe` or `ctest --test-dir build\cmake`; then open a pull request with a concise description and test results. See [AGENTS.md](AGENTS.md) for build instructions and [docs/engineering/TESTING.md](docs/engineering/TESTING.md) for the manual test checklist.
+
+## App Rules
+
+App Rules in Settings automatically send matching **new** windows to a target workspace:
+
+1. Focus a window of the app you want to assign.
+2. Open Settings (`Ctrl+Alt+O`) and select **App Rules**.
+3. Click **+ Add rule**. FlowSpace captures the app’s `.exe` name and the workspace active on its monitor.
+
+Rules can be enabled, disabled, or deleted in Settings. They affect new windows; adding a rule does not move windows that are already open.
+
+For advanced matching by executable path or window-title substring, exit FlowSpace first, then edit the `appRules` array in `%LOCALAPPDATA%\FlowSpace\config.json`:
 
 ```jsonc
 "appRules": [
@@ -98,52 +119,25 @@ The Settings page only shows the executable, target workspace, and on/off state.
 ]
 ```
 
-Prefer **+ Add rule** when you need a `monitorStableId` — it captures the long display identifier for you, and hand-written values are easy to get wrong.
+Rules are checked in order; the first enabled match wins. At least one of `exeName`, `exePath`, or `titleContains` must be set. Prefer **+ Add rule** when targeting a specific monitor, as it captures the long display identifier.
 
-**How matching works:**
+![Screen recording of app rules assigning windows in a two-monitor setup](docs/assets/app-rules-two-monitors.gif)
 
-- Rules are checked in order; the first enabled match wins, and its target workspace must belong to the monitor the window appeared on.
-- At least one of `exeName`, `exePath`, or `titleContains` must be set; a rule with all three empty matches nothing.
-- `exeName`/`exePath` are exact, case-insensitive comparisons. `titleContains` is a case-sensitive substring match.
-- `monitorPreference: 2` restricts the rule to one display; `1` moves the window to a monitor whose active workspace is the target; `0` leaves monitor placement alone.
-- If no rule matches, FlowSpace groups windows by application, then falls back to the monitor's active workspace.
-- Rules affect **new** windows. Adding a rule does not move windows that are already open — restart FlowSpace to apply rules to them. That startup pass switches the target monitor to the rule's workspace so the window becomes visible.
+## Social preview
 
-## Features
+The GitHub social preview artwork is [`docs/assets/social-preview.png`](docs/assets/social-preview.png). To use it on shared repository links, upload it under **Repository Settings → General → Social preview**.
 
-- **Per-monitor workspaces** — each monitor has its own active workspace and switch history. Nothing on monitor B changes when monitor A switches.
-- **Window hide/show with crash recovery** — hidden windows are journaled to disk before being hidden, and restored automatically on the next start — even after a crash or power loss.
-- **Per-workspace wallpapers** — each workspace can have its own image per monitor. Your original desktop is captured and restored on exit.
-- **Global hotkeys** with conflict detection — two shortcuts can't silently override each other.
-- **Tray icon** — per-monitor workspace menu, pause, reveal-all, exit.
-- **Overlay & switcher popup** — brief on-screen notification after switching; `Ctrl+Alt+Space` lists all workspaces.
-- **Robust config** — `config.json` with a rotating backup. A corrupt main file recovers from the backup automatically.
+## License and project docs
 
-## System requirements
+FlowSpace is distributed under the MIT License; see [`LICENSE`](LICENSE). Third-party components retain their own licenses, listed in [`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt).
 
-- Windows 10 (1903+) or Windows 11, x64
-- No administrator rights required
-
-## License
-
-FlowSpace is distributed under the MIT License; see [`LICENSE`](LICENSE).
-Third-party components retain their own licenses, listed in
-[`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt).
-
-## Engineering reference docs
-
-FlowSpace keeps its architecture, configuration, quality, and testing references in [`docs/engineering/`](docs/engineering/). Coding agents should also start with [`AGENTS.md`](AGENTS.md).
-
-| File | Purpose |
-|------|---------|
-| `AGENTS.md` | Primary instructions for AI coding agents (read first) |
-| [`ARCHITECTURE.md`](docs/engineering/ARCHITECTURE.md) | Module responsibilities, Windows APIs, data flow |
-| [`CODE_QUALITY.md`](docs/engineering/CODE_QUALITY.md) | C++ conventions and cleanup guidance |
-| [`CONFIGURATION.md`](docs/engineering/CONFIGURATION.md) | `config.json` schema reference |
+| Reference | Purpose |
+|---|---|
+| [`PRODUCT.md`](docs/PRODUCT.md) | Product facts, supported platforms, and limitations |
+| [`ARCHITECTURE.md`](docs/engineering/ARCHITECTURE.md) | Modules, Windows APIs, and data flow |
+| [`CONFIGURATION.md`](docs/engineering/CONFIGURATION.md) | `config.json` schema |
+| [`CODE_QUALITY.md`](docs/engineering/CODE_QUALITY.md) | C++ conventions |
 | [`TESTING.md`](docs/engineering/TESTING.md) | Manual integration test checklist |
+| [`AGENTS.md`](AGENTS.md) | Build instructions and coding-agent workflow |
 
-See [`AGENTS.md`](AGENTS.md) for the mandatory agent workflow.
-
----
-
-*FlowSpace is an independent per-monitor workspace manager for Windows 10/11. Built with native C++ (MinGW). Source builds require MinGW-w64 UCRT64, CMake, and Ninja — see the build section in [`AGENTS.md`](AGENTS.md) if you want to compile from source.*
+To build the project website locally, run `node website/build.mjs`. The static output is in `build/site/`.
