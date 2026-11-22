@@ -50,7 +50,8 @@ function render(page) {
         const current = page.path === path ? ' aria-current="page"' : '';
         return `<a href="${link(path)}"${current}>${label}</a>`;
     }).join('\n            ');
-    const structured = page.path === '' ? `
+    const homeMetadata = page.path === '' ? `
+    <meta name="google-site-verification" content="x-t4oXNYIvm8jVw4BYGa1xSLPUcGrPoM2KHdtiiFoL4" />
     <script type="application/ld+json">${JSON.stringify(software, null, 4).replaceAll('<', '\\u003c')}</script>` : '';
     return `<!doctype html>
 <html lang="en">
@@ -68,7 +69,7 @@ function render(page) {
     <meta property="og:image" content="${escape(preview)}">
     <meta property="og:image:alt" content="FlowSpace artwork showing two independent monitor workspaces">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="stylesheet" href="${link('assets/site.css')}">${structured}
+    <link rel="stylesheet" href="${link('assets/site.css')}">${homeMetadata}
 </head>
 <body>
     <a class="skip" href="#main">Skip to content</a>
